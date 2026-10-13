@@ -1,5 +1,6 @@
 import { startGame } from '../../game/engine';
 import { useGameState } from '../../game/state';
+import { requestFullscreen } from '../../utils/fullscreen';
 
 export function GameOverScreen() {
   const score = useGameState((s) => s.score);
@@ -18,6 +19,7 @@ export function GameOverScreen() {
           className="btn"
           onClick={(e) => {
             e.currentTarget.blur();
+            requestFullscreen();
             startGame();
           }}
         >

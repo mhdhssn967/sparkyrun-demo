@@ -1,5 +1,6 @@
 import { startGame } from '../../game/engine';
 import { useGameState } from '../../game/state';
+import { requestFullscreen } from '../../utils/fullscreen';
 
 const isTouch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 
@@ -29,6 +30,7 @@ export function StartScreen() {
           className="start-play-btn"
           onClick={(e) => {
             e.currentTarget.blur();
+            requestFullscreen();
             startGame();
           }}
           aria-label="Play Game"

@@ -13,4 +13,4 @@ export const KEY_MAP: Record<string, GameAction> = {
 };
 
 /** Pixels a pointer must travel before it counts as a swipe. */
-export const SWIPE_THRESHOLD = 28;
+export const SWIPE_THRESHOLD = 32;

@@ -195,9 +195,9 @@ function modernTower(out: Out, banners: Banners, r: Rng, s: number, x: number, z
   if (chance(r, 0.4)) box(out, x, bandY + 2.6, z, w * 1.04, 0.5, d * 1.04, COLORS.white);
   if (chance(r, 0.4)) cyl(out, x, 4 + h, z, 0.35, 7, COLORS.charcoal); // antenna
 
-  // Building Banners / Mega-Hoardings on Modern Towers
+  // Building Banners / Mega-Hoardings on Modern Towers (halved amount)
   // 1. Facade LED Display (Banner A or Banner B)
-  if (chance(r, 0.82)) {
+  if (chance(r, 0.4)) {
     if (chance(r, 0.55)) {
       // Skyscraper Facade LED Display (Banner A - 329x263, aspect ~1.25095)
       const bh = range(r, 7.5, 11.5);
@@ -218,7 +218,7 @@ function modernTower(out: Out, banners: Banners, r: Rng, s: number, x: number, z
   }
 
   // 2. Rooftop Illuminated Hoarding on mid-rises
-  if (h <= 36 && chance(r, 0.6)) {
+  if (h <= 36 && chance(r, 0.28)) {
     const bh = range(r, 2.6, 3.4);
     const bw = bh * BANNER_B_ASPECT;
     const by = 4 + h + bh / 2 + 0.8;
@@ -242,8 +242,8 @@ function roundTower(out: Out, banners: Banners, r: Rng, s: number, x: number, z:
   cyl(out, x, h, z, dia * 1.08, 1.2, COLORS.maroon);
   if (chance(r, 0.5)) cone(out, x, h + 1.2, z, dia * 0.5, 7, COLORS.white);
 
-  // Large-scale building banners on round tower
-  if (chance(r, 0.78)) {
+  // Large-scale building banners on round tower (halved amount)
+  if (chance(r, 0.38)) {
     if (chance(r, 0.5)) {
       // Cantilever Facade LED Screen (Banner A)
       const bh = range(r, 6.0, 8.5);
@@ -291,8 +291,8 @@ function traditionalHouse(out: Out, banners: Banners, r: Rng, s: number, x: numb
   }
   if (chance(r, 0.3)) sphere(out, x - w * 0.15, h + 0.2, z, Math.min(w, d) * 0.55, Math.min(w, d) * 0.4, Math.min(w, d) * 0.55, COLORS.white);
 
-  // Large-scale commercial billboards on traditional buildings
-  if (chance(r, 0.82)) {
+  // Large-scale commercial billboards on traditional buildings (halved amount)
+  if (chance(r, 0.4)) {
     const roll = r();
     const frontZ = z + d / 2;
     if (roll < 0.4) {
@@ -371,15 +371,15 @@ function nearLayer(out: Out, banners: Banners, r: Rng, s: number) {
   }
 }
 
-function farLayer(out: Out, banners: Banners, r: Rng, s: number) {
+function farLayer(out: Out, r: Rng, s: number) {
   for (const zc of [15, 45]) {
     const z = -zc + range(r, -4, 4);
     const roll = r();
     const x = s * range(r, 42, 56);
     if (roll < 0.1) torchTower(out, x, z, range(r, 85, 105));
-    else if (roll < 0.55) modernTower(out, banners, r, s, x, z, range(r, 12, 18), range(r, 12, 18), range(r, 45, 95));
-    else if (roll < 0.85) roundTower(out, banners, r, s, x, z, range(r, 12, 16), range(r, 50, 90));
-    else traditionalHouse(out, banners, r, s, x, z, range(r, 14, 22), range(r, 12, 18), range(r, 8, 14));
+    else if (roll < 0.55) modernTower(out, [], r, s, x, z, range(r, 12, 18), range(r, 12, 18), range(r, 45, 95));
+    else if (roll < 0.85) roundTower(out, [], r, s, x, z, range(r, 12, 16), range(r, 50, 90));
+    else traditionalHouse(out, [], r, s, x, z, range(r, 14, 22), range(r, 12, 18), range(r, 8, 14));
   }
 }
 
@@ -397,7 +397,7 @@ export function generateChunk(index: number): ChunkOutput {
   roadside(out, banners, r);
   for (const s of [-1, 1]) {
     nearLayer(out, banners, r, s);
-    farLayer(out, banners, r, s);
+    farLayer(out, r, s);
     dunes(out, r, s);
   }
   return { instances: out, banners };

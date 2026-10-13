@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { applyAction, startGame } from '../game/engine';
 import { KEY_MAP } from '../game/input';
 import { getGameState } from '../game/state';
+import { requestFullscreen } from '../utils/fullscreen';
 
 /** Arrow keys / WASD / Space to play; Enter or Space starts and restarts. */
 export function useKeyboardControls() {
@@ -18,6 +19,7 @@ export function useKeyboardControls() {
       }
       if (e.code === 'Enter' || e.code === 'Space') {
         e.preventDefault();
+        requestFullscreen();
         startGame();
       }
     };
