@@ -138,7 +138,7 @@ export function CustomerRegistrationModal({
         {/* Top PET Popular Electricals Logo */}
         <div className="cyber-brand-header">
           <img
-            src="/pet_logo_white.png"
+            src="/pet_logo_red.png"
             alt="PET Popular Electricals & Trading Co. W.L.L"
             className="cyber-pet-logo"
             width={329}

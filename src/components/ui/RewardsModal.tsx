@@ -3,7 +3,7 @@ import type {
   BrandReward,
   ClaimedVoucher,
   CustomerProfile,
-  DailyDateWinnersGroup,
+  WeeklyWinnersGroup,
 } from '../../types/customer';
 import { popularApi, POPULAR_BRAND_REWARDS } from '../../services/popularApi';
 import { useGameState } from '../../game/state';
@@ -26,6 +26,15 @@ function ArrowLeftSvg({ className = '' }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+function CalendarSvg({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ED1C24" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16 2v4M8 2v4M3 10h18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -55,18 +64,12 @@ function CoinSvg({ className = '' }: { className?: string }) {
   );
 }
 
-function getInitial(name: string): string {
-  if (!name) return 'P';
-  const trimmed = name.trim();
-  return trimmed.charAt(0).toUpperCase();
-}
-
 export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
   const handleBack = onBack || onClose || (() => {});
-  const [activeTab, setActiveTab] = useState<'rewards' | 'daily_winners'>('rewards');
+  const [activeTab, setActiveTab] = useState<'rewards' | 'weekly_winners'>('rewards');
   const [rewards] = useState<BrandReward[]>(POPULAR_BRAND_REWARDS);
   const [vouchers, setVouchers] = useState<ClaimedVoucher[]>([]);
-  const [dailyDateWinners, setDailyDateWinners] = useState<DailyDateWinnersGroup[]>([]);
+  const [weeklyWinners, setWeeklyWinners] = useState<WeeklyWinnersGroup[]>([]);
   const [isLoadingWinners, setIsLoadingWinners] = useState(false);
   const [activeVoucherModal, setActiveVoucherModal] = useState<ClaimedVoucher | null>(null);
   const [customer, setCustomer] = useState<CustomerProfile | null>(null);
@@ -82,10 +85,10 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
 
     setIsLoadingWinners(true);
     popularApi
-      .getPreviousDailyWinners()
+      .getPreviousWeeklyWinners()
       .then((groups) => {
         if (isMounted) {
-          setDailyDateWinners(groups);
+          setWeeklyWinners(groups);
           setIsLoadingWinners(false);
         }
       })
@@ -105,8 +108,8 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
       const updatedVouchers = popularApi.getClaimedVouchers();
       setVouchers(updatedVouchers);
 
-      const updatedGroups = await popularApi.getPreviousDailyWinners();
-      setDailyDateWinners(updatedGroups);
+      const updatedGroups = await popularApi.getPreviousWeeklyWinners();
+      setWeeklyWinners(updatedGroups);
 
       setActiveVoucherModal(voucher);
     } catch {
@@ -144,7 +147,7 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
           </div>
         </header>
 
-        {/* Capsule Segmented Tab Switcher (Rewards | Daily Winners) */}
+        {/* Capsule Segmented Tab Switcher (Rewards | Weekly Winners) */}
         <div className="smooth-lb-tabs-capsule">
           <button
             type="button"
@@ -156,10 +159,10 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
 
           <button
             type="button"
-            className={`smooth-lb-tab-pill ${activeTab === 'daily_winners' ? 'active' : ''}`}
-            onClick={() => setActiveTab('daily_winners')}
+            className={`smooth-lb-tab-pill ${activeTab === 'weekly_winners' ? 'active' : ''}`}
+            onClick={() => setActiveTab('weekly_winners')}
           >
-            Daily Winners
+            Weekly Winners
           </button>
         </div>
 
@@ -168,6 +171,37 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
           <div className="smooth-rewards-list">
             {rewards.map((item) => {
               const isClaimed = vouchers.some((v) => v.rewardId === item.id);
+
+              // LuLu 100 Riyal Surprise Gift found inside the game itself
+              if (item.isSurprise) {
+                return (
+                  <div
+                    key={item.id}
+                    className="smooth-reward-card surprise-gift-card"
+                  >
+                    <div className="smooth-reward-info">
+                      <div className="smooth-reward-header-row">
+                        <span className="smooth-reward-title">{item.title}</span>
+                      </div>
+                      <div className="smooth-reward-ingame-hint">
+                        100 Riyal voucher will be in the game, play to get it in the game
+                      </div>
+                    </div>
+
+                    <div className="smooth-reward-action">
+                      <button
+                        type="button"
+                        className="smooth-reward-btn btn-claim"
+                        onClick={handleBack}
+                        title="Play game to get the voucher"
+                      >
+                        Play ➔
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
               const isEligible = userCoins >= item.requiredCoins;
               const progressPct = Math.min(100, Math.floor((userCoins / item.requiredCoins) * 100));
 
@@ -178,10 +212,6 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
                     isClaimed ? 'claimed' : isEligible ? 'ready' : 'locked'
                   }`}
                 >
-                  <div className="smooth-reward-icon-badge">
-                    <span className="smooth-reward-emoji">{item.icon}</span>
-                  </div>
-
                   <div className="smooth-reward-info">
                     <div className="smooth-reward-header-row">
                       <span className="smooth-reward-title">{item.title}</span>
@@ -236,67 +266,49 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
           </div>
         )}
 
-        {/* Content Area - Tab 2: Daily Winners of Previous Dates (3 names per date) */}
-        {activeTab === 'daily_winners' && (
-          <div className="smooth-daily-winners-container">
+        {/* Content Area - Tab 2: Weekly Winners (Decluttered with Date in White + Name & Points) */}
+        {activeTab === 'weekly_winners' && (
+          <div className="smooth-weekly-winners-container">
             {isLoadingWinners ? (
               <div className="smooth-lb-loading">
                 <span className="smooth-lb-spinner">⚡</span>
-                <span>Loading daily winners...</span>
+                <span>Loading weekly winners...</span>
               </div>
-            ) : dailyDateWinners.length === 0 ? (
+            ) : weeklyWinners.length === 0 ? (
               <div className="smooth-lb-empty">
-                <span>No previous daily winners recorded yet.</span>
+                <span>No previous weekly winners recorded yet.</span>
               </div>
             ) : (
-              dailyDateWinners.map((group) => (
-                <div key={group.dateKey} className="smooth-daily-date-block">
-                  {/* Date Header Strip */}
-                  <div className="smooth-daily-date-header">
-                    <span className="smooth-daily-date-icon">📅</span>
-                    <span className="smooth-daily-date-title">{group.dateLabel}</span>
-                    <span className="smooth-daily-date-count">3 WINNERS</span>
+              weeklyWinners.map((group) => {
+                const isUserWinner = Boolean(
+                  customer?.name && group.winner.name.toLowerCase() === customer.name.toLowerCase()
+                );
+
+                return (
+                  <div
+                    key={group.weekKey}
+                    className={`smooth-weekly-winner-card ${
+                      isUserWinner ? 'current-user-card' : ''
+                    }`}
+                  >
+                    {/* Date row: Date icon with date in white color */}
+                    <div className="smooth-weekly-date-row">
+                      <CalendarSvg className="smooth-calendar-svg" />
+                      <span className="smooth-weekly-date-text">{group.weekLabel}</span>
+                    </div>
+
+                    {/* Below it: Name of person who won & points */}
+                    <div className="smooth-weekly-winner-row">
+                      <span className="smooth-weekly-winner-name">
+                        {isUserWinner ? `${group.winner.name} (You)` : group.winner.name}
+                      </span>
+                      <span className="smooth-weekly-points">
+                        {group.winner.score.toLocaleString()} PTS
+                      </span>
+                    </div>
                   </div>
-
-                  {/* Three winners of this date */}
-                  <div className="smooth-daily-winners-list">
-                    {group.winners.map((winner) => {
-                      const isUserWinner = Boolean(
-                        customer?.name && winner.name.toLowerCase() === customer.name.toLowerCase()
-                      );
-
-                      return (
-                        <div
-                          key={winner.rank}
-                          className={`smooth-daily-winner-card rank-${winner.rank} ${
-                            isUserWinner ? 'current-user-card' : ''
-                          }`}
-                        >
-                          {/* Rank / Medal badge */}
-                          <div className={`smooth-winner-medal-badge rank-${winner.rank}`}>
-                            {winner.rank === 1 ? '🥇' : winner.rank === 2 ? '🥈' : '🥉'}
-                          </div>
-
-                          {/* Avatar Monogram */}
-                          <div className={`smooth-card-avatar-initial rank-${winner.rank}`}>
-                            {getInitial(winner.name)}
-                          </div>
-
-                          {/* Winner Name & Prize */}
-                          <div className="smooth-daily-winner-info">
-                            <span className="smooth-daily-winner-name">
-                              {isUserWinner ? `${winner.name} (You)` : winner.name}
-                            </span>
-                            <span className="smooth-daily-winner-prize">
-                              🎁 {winner.prize}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

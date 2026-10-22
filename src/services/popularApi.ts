@@ -5,6 +5,7 @@ import type {
   DailyDateWinnersGroup,
   LeaderboardEntry,
   LiveClaimEvent,
+  WeeklyWinnersGroup,
 } from '../types/customer';
 
 const STORAGE_KEY_CUSTOMER = 'popular_customer_profile';
@@ -81,32 +82,32 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
   {
     id: 'pop-reward-keychain',
     title: 'Keychain',
-    desc: 'Official Popular Electricals Sparky Keychain',
-    discountValue: 'KEYCHAIN',
+    desc: 'Sparky Keychain, Executive Pen, or Official Popular Cap',
+    discountValue: 'KEYCHAIN / PEN / CAP',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 7000,
-    icon: '🔑',
+    requiredCoins: 5000,
+    icon: '',
   },
   {
-    id: 'pop-reward-keychain-cap',
-    title: 'Keychain + Cap',
-    desc: 'Sparky Keychain + Official Cap',
-    discountValue: 'KEYCHAIN + CAP',
+    id: 'pop-reward-pen',
+    title: 'Pen',
+    desc: 'Sparky Keychain, Executive Pen, or Official Popular Cap',
+    discountValue: 'KEYCHAIN / PEN / CAP',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 10000,
-    icon: '🧢',
+    requiredCoins: 5000,
+    icon: '',
   },
   {
-    id: 'pop-reward-keychain-pen',
-    title: 'Keychain + Pen',
-    desc: 'Sparky Keychain + Executive Pen',
-    discountValue: 'KEYCHAIN + PEN',
+    id: 'pop-reward-Cap',
+    title: 'Cap',
+    desc: 'Sparky Keychain, Executive Pen, or Official Popular Cap',
+    discountValue: 'KEYCHAIN / PEN / CAP',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 16000,
-    icon: '✒️',
+    requiredCoins: 5000,
+    icon: '',
   },
   {
     id: 'pop-reward-diary',
@@ -115,18 +116,49 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
     discountValue: 'DIARY',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 20000,
-    icon: '📔',
+    requiredCoins: 10000,
+    icon: '',
   },
   {
-    id: 'pop-reward-shirt',
-    title: 'Shirt',
-    desc: 'Popular Electricals Official Shirt',
-    discountValue: 'SHIRT',
+    id: 'pop-reward-diary-box',
+    title: 'Diary Box',
+    desc: 'Premium Popular Electricals Diary Box Set',
+    discountValue: 'DIARY BOX',
+    terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
+    requiredDistance: 0,
+    requiredCoins: 16000,
+    icon: '',
+  },
+  {
+    id: 'pop-reward-tshirt',
+    title: 'T-Shirt',
+    desc: 'Popular Electricals Exclusive Watch or Official Brand T-Shirt',
+    discountValue: 'WATCH / T-SHIRT',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
     requiredCoins: 30000,
-    icon: '👕',
+    icon: '',
+  },
+  {
+    id: 'pop-reward-watch',
+    title: 'Watch',
+    desc: 'Popular Electricals Exclusive Watch or Official Brand T-Shirt',
+    discountValue: 'WATCH / T-SHIRT',
+    terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
+    requiredDistance: 0,
+    requiredCoins: 30000,
+    icon: '',
+  },
+  {
+    id: 'pop-reward-surprise-lulu',
+    title: 'LuLu 100 Riyal Voucher Coupon',
+    desc: '100 Riyal voucher will be in the game, play to get it in the game',
+    discountValue: '100 QAR VOUCHER',
+    terms: '100 Riyal voucher will be in the game, play to get it in the game. Redeemable at LuLu Hypermarket Qatar.',
+    requiredDistance: 0,
+    requiredCoins: 0,
+    icon: '',
+    isSurprise: true,
   },
 ];
 
@@ -628,52 +660,62 @@ class PopularApiService {
     return SEED_LIVE_CLAIMS;
   }
 
-  // 6. Daily Winners by Previous Dates (3 winners per date)
-  async getPreviousDailyWinners(): Promise<DailyDateWinnersGroup[]> {
-    const seedPool: { rank: number; name: string; prize: string }[][] = [
-      [
-        { rank: 1, name: 'Salem Al-Kuwari', prize: 'Keychain + Cap' },
-        { rank: 2, name: 'Fatima Al-Nuaimi', prize: 'Keychain' },
-        { rank: 3, name: 'Nasser Al-Hajri', prize: 'Keychain' },
-      ],
-      [
-        { rank: 1, name: 'Mohammed Al-Thani', prize: 'Shirt' },
-        { rank: 2, name: 'Ravi Subramanian', prize: 'Diary' },
-        { rank: 3, name: 'Aisha Al-Kuwari', prize: 'Keychain + Pen' },
-      ],
-      [
-        { rank: 1, name: 'Tariq Mansoor', prize: 'Diary' },
-        { rank: 2, name: 'Sara Al-Mohannadi', prize: 'Keychain + Cap' },
-        { rank: 3, name: 'Rashid Khan', prize: 'Keychain' },
-      ],
-      [
-        { rank: 1, name: 'Fahad Al-Marri', prize: 'Shirt' },
-        { rank: 2, name: 'Abdullah Q.', prize: 'Keychain + Pen' },
-        { rank: 3, name: 'Jassim Al-Sulaiti', prize: 'Keychain' },
-      ],
+  // 6. Weekly Winners by Previous Weeks (Only 1 Winner per week - High Scorer awarded PET Gift Bag)
+  async getPreviousWeeklyWinners(): Promise<WeeklyWinnersGroup[]> {
+    const seedWeeklyWinners: WeeklyWinnersGroup[] = [
+      {
+        weekKey: 'week-2026-42',
+        weekLabel: '14 Oct – 20 Oct 2026 (Last Week)',
+        weekNumber: 42,
+        winner: {
+          name: 'Salem Al-Kuwari',
+          score: 84320,
+          prize: 'PET Gift Bag (T-Shirt, Watch, Book Case)',
+        },
+      },
+      {
+        weekKey: 'week-2026-41',
+        weekLabel: '07 Oct – 13 Oct 2026',
+        weekNumber: 41,
+        winner: {
+          name: 'Fatima Al-Nuaimi',
+          score: 79150,
+          prize: 'PET Gift Bag (T-Shirt, Watch, Book Case)',
+        },
+      },
+      {
+        weekKey: 'week-2026-40',
+        weekLabel: '30 Sep – 06 Oct 2026',
+        weekNumber: 40,
+        winner: {
+          name: 'Mohammed Al-Thani',
+          score: 92400,
+          prize: 'PET Gift Bag (T-Shirt, Watch, Book Case)',
+        },
+      },
+      {
+        weekKey: 'week-2026-39',
+        weekLabel: '23 Sep – 29 Sep 2026',
+        weekNumber: 39,
+        winner: {
+          name: 'Ravi Subramanian',
+          score: 74800,
+          prize: 'PET Gift Bag (T-Shirt, Watch, Book Case)',
+        },
+      },
     ];
 
-    const todayDate = new Date();
-    const groups: DailyDateWinnersGroup[] = [];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return seedWeeklyWinners;
+  }
 
-    for (let i = 1; i <= 4; i++) {
-      const d = new Date(todayDate);
-      d.setDate(d.getDate() - i);
-      const dateKey = d.toISOString().slice(0, 10);
-      const dayNum = d.getDate();
-      const monthStr = monthNames[d.getMonth()];
-      const yearStr = d.getFullYear();
-      const dateLabel = i === 1 ? `${dayNum} ${monthStr} ${yearStr} (Yesterday)` : `${dayNum} ${monthStr} ${yearStr}`;
-
-      groups.push({
-        dateKey,
-        dateLabel,
-        winners: seedPool[(i - 1) % seedPool.length],
-      });
-    }
-
-    return groups;
+  // Backward compatibility alias for daily winners
+  async getPreviousDailyWinners(): Promise<DailyDateWinnersGroup[]> {
+    const weekly = await this.getPreviousWeeklyWinners();
+    return weekly.map((w) => ({
+      dateKey: w.weekKey,
+      dateLabel: w.weekLabel,
+      winners: [{ rank: 1, name: w.winner.name, prize: w.winner.prize }],
+    }));
   }
 }
 

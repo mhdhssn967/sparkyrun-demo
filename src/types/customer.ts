@@ -40,6 +40,7 @@ export interface BrandReward {
   requiredDistance: number;
   requiredCoins: number;
   icon: string;
+  isSurprise?: boolean;
 }
 
 export interface ClaimedVoucher {
@@ -61,6 +62,19 @@ export interface LiveClaimEvent {
   rewardTitle: string;
   timeAgo: string;
   timestamp: number;
+}
+
+export interface WeeklyWinner {
+  name: string;
+  score: number;
+  prize: string;
+}
+
+export interface WeeklyWinnersGroup {
+  weekKey: string;
+  weekLabel: string;
+  weekNumber: number;
+  winner: WeeklyWinner;
 }
 
 export interface DailyDateWinner {
