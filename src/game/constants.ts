@@ -39,16 +39,16 @@ export const COLORS = {
   charcoal: 0x2b2d33,
   turquoise: 0x17c0b8,
   gold: 0xedb847,
-  palm: 0x358a43,
-  palmLight: 0x52a54e,
+  palm: 0x2e943c,
+  palmLight: 0x44b248,
   trunk: 0x7a5a3a,
-  horizon: 0xfce3c5,
-  skyTop: 0x2d93db,
-  sun: 0xfff3d6,
+  horizon: 0xfef3e4,
+  skyTop: 0x1683e8,
+  sun: 0xfff6e8,
 } as const;
 
-export const FOG_NEAR = 55;
-export const FOG_FAR = 220;
+export const FOG_NEAR = 75;
+export const FOG_FAR = 250;
 
 /** Everything beyond this view-space distance is bent down/sideways (see bendMaterial). */
 export const BEND_START = 9;
@@ -82,4 +82,18 @@ export const BANNER_TEXTURES = {
   bannerA: '/bannerimages/image.png',
   bannerB: '/bannerimages/image%20copy.png',
 } as const;
+
+// ---- Audio -----------------------------------------------------------------
+export const BGM_URL = '/sounds/bgm.mp3';
+export const BGM_DEFAULT_VOLUME = 0.5;
+export const COIN_SOUND_URL = '/coin.mp3';
+export const POWERUP_SOUND_URL = '/assets/power.mp3';
+export const POWERUP_THEME_URL = '/assets/powerup.mp3';
+
+// ---- Power-up / Turbo ------------------------------------------------------
+export const POWERUP_URL = '/assets/powerup.glb';
+export const TURBO_DURATION = 10.0;
+export const TURBO_SPEED_MULTIPLIER = 8.0;
+export const TURBO_DECEL_DURATION = 2.0;
+
 

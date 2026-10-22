@@ -92,6 +92,8 @@ function createSlot(res: ReturnType<typeof createResources>): Slot {
     mesh.instanceColor = new InstancedBufferAttribute(new Float32Array(cap * 3), 3); // allocated up-front so the shader variant never changes
     mesh.frustumCulled = false;
     mesh.count = 0;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
     group.add(mesh);
     meshes[kind] = mesh;
   }
@@ -103,6 +105,8 @@ function createSlot(res: ReturnType<typeof createResources>): Slot {
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     mesh.frustumCulled = false;
     mesh.count = 0;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
     group.add(mesh);
     bannerMeshes[kind] = mesh;
   }

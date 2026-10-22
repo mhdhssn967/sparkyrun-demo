@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
+import { NeutralToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three';
 import { CAMERA, COLORS, FOG_FAR, FOG_NEAR } from '../../game/constants';
 import { useKeyboardControls } from '../../hooks/useKeyboardControls';
 import { useSwipeControls } from '../../hooks/useSwipeControls';
@@ -8,9 +9,15 @@ import { Environment } from './Environment';
 import { FollowCamera } from './FollowCamera';
 import { GameLoop } from './GameLoop';
 import { Obstacles } from './Obstacles';
+import { Crystals } from './Crystals';
+import { Magnets } from './Magnets';
+import { Powerups } from './Powerups';
+import { CoinSparkles } from './CoinSparkles';
+import { LightningSparks } from './LightningSparks';
 import { Player } from './Player';
 import { Road } from './Road';
 import { Sky } from './Sky';
+import { GameEnvironment } from './GameEnvironment';
 
 export function GameCanvas() {
   const container = useRef<HTMLDivElement>(null);
@@ -23,40 +30,70 @@ export function GameCanvas() {
     <div ref={container} className="game-canvas">
       <Canvas
         shadows
-        flat // no tone mapping, so fog and sky colours match exactly
         dpr={[1, maxDpr]}
         camera={{ fov: 60, near: 0.1, far: 700, position: [0, CAMERA.height, CAMERA.distance] }}
-        gl={{ antialias: true, powerPreference: 'high-performance', stencil: false }}
+        gl={{
+          antialias: true,
+          powerPreference: 'high-performance',
+          stencil: false,
+          toneMapping: NeutralToneMapping,
+          toneMappingExposure: 1.12,
+        }}
+        onCreated={({ gl }) => {
+          gl.outputColorSpace = SRGBColorSpace;
+          gl.shadowMap.enabled = true;
+          gl.shadowMap.type = PCFSoftShadowMap;
+        }}
       >
         {/* drop resolution automatically if the device can't hold the frame rate */}
         <PerformanceMonitor onDecline={() => setMaxDpr(1)} />
 
         <fog attach="fog" args={[COLORS.horizon, FOG_NEAR, FOG_FAR]} />
-        <ambientLight color={0xfff7ed} intensity={0.55} />
-        <hemisphereLight args={[0xd2ecff, 0xf6dec0, 1.4]} />
+
+        {/* Restrained ambient fill lighting to illuminate shadowed building faces without making the scene flat */}
+        <ambientLight color={0xf2f6fa} intensity={0.28} />
+
+        {/* Soft blue sky and warm neutral ground ambient illumination */}
+        <hemisphereLight args={[0x58a8f5, 0xded2c4, 1.25]} />
+
+        {/* Strong directional sunlight from the upper front-left with a warm golden tint */}
         <directionalLight
           castShadow
-          color={0xfff5e4}
+          color={COLORS.sun}
           intensity={2.35}
-          position={[6, 14, 10]}
+          position={[-12, 22, 12]}
           shadow-mapSize={[1024, 1024]}
-          shadow-bias={-0.0005}
-          shadow-camera-near={0.5}
+          shadow-bias={-0.0003}
+          shadow-normalBias={0.02}
+          shadow-camera-near={1}
           shadow-camera-far={45}
-          shadow-camera-left={-8}
-          shadow-camera-right={8}
-          shadow-camera-top={8}
-          shadow-camera-bottom={-8}
+          shadow-camera-left={-5}
+          shadow-camera-right={5}
+          shadow-camera-top={7}
+          shadow-camera-bottom={-7}
         />
-        {/* Soft front-side sky fill and rim light to make character and obstacles pop */}
-        <directionalLight color={0xa8dbff} intensity={0.65} position={[-6, 10, -14]} />
 
+        {/* Horizon golden sunlight rim glow aligned with the distant sun */}
+        <directionalLight color={0xffeedb} intensity={1.2} position={[4, 8, -26]} />
+
+        {/* Subtle sky fill light on the right to illuminate shadowed faces with natural sky bounce */}
+        <directionalLight color={0x8ac7fc} intensity={0.5} position={[12, 14, -6]} />
+
+        {/* Frontal camera-side specular fill light for brilliant coin & metal reflections */}
+        <directionalLight color={0xfffae6} intensity={1.15} position={[0, 9, 14]} />
+
+        <GameEnvironment />
         <Sky />
         <GameLoop />
         <Road />
         <Environment />
         <Obstacles />
+        <Crystals />
+        <Magnets />
+        <Powerups />
+        <CoinSparkles />
         <Player />
+        <LightningSparks />
         <FollowCamera />
       </Canvas>
     </div>

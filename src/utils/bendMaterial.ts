@@ -1,4 +1,4 @@
-import { DoubleSide, MeshBasicMaterial, MeshLambertMaterial, Vector2 } from 'three';
+import { DoubleSide, MeshBasicMaterial, MeshStandardMaterial, Vector2 } from 'three';
 import type { Material, Texture, WebGLProgramParametersWithUniforms } from 'three';
 import { BEND_START } from '../game/constants';
 
@@ -34,24 +34,37 @@ export function applyBend<T extends Material>(material: T, customKey = 'bend-v1'
   return material;
 }
 
-export const createPropMaterial = () => applyBend(new MeshLambertMaterial({ color: 0xffffff }));
+export const createPropMaterial = () =>
+  applyBend(
+    new MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.48,
+      metalness: 0.06,
+    }),
+  );
+
 export const createEmissiveMaterial = () => applyBend(new MeshBasicMaterial({ color: 0xffffff }));
 
 export function createBannerMaterial(texture: Texture, cacheKey: string) {
-  const material = new MeshBasicMaterial({
+  const material = new MeshStandardMaterial({
     map: texture,
-    toneMapped: false,
+    roughness: 0.42,
+    metalness: 0.04,
     side: DoubleSide,
   });
   return applyBend(material, cacheKey);
 }
 
 /**
- * Lambert material with a procedural window grid on tall faces — gives skyscrapers
- * detail without any textures or extra geometry. Works on unit boxes and unit cylinders.
+ * Standard PBR material with a procedural window grid on tall faces — gives skyscrapers
+ * polished reflections and detail without any textures or extra geometry. Works on unit boxes and cylinders.
  */
 export function createBuildingMaterial(cylindrical: boolean) {
-  const material = new MeshLambertMaterial({ color: 0xffffff });
+  const material = new MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.28,
+    metalness: 0.18,
+  });
   material.onBeforeCompile = (shader) => {
     patchBendVertex(shader, 'varying vec3 vLP;\nvarying vec3 vON;\nvarying float vH;');
     shader.vertexShader = shader.vertexShader.replace(
@@ -78,12 +91,13 @@ export function createBuildingMaterial(cylindrical: boolean) {
           vec2 f = fract(cell);
           float win = step(0.18, f.x) * step(f.x, 0.82) * step(0.22, f.y) * step(f.y, 0.78);
           float rnd = fract(sin(dot(id, vec2(12.9898, 78.233))) * 43758.5453);
-          vec3 glass = diffuseColor.rgb * 0.36 + vec3(0.02, 0.05, 0.09);
-          diffuseColor.rgb = mix(diffuseColor.rgb, glass, win);
-          totalEmissiveRadiance += win * step(0.88, rnd) * vec3(1.0, 0.76, 0.42) * 0.5;
+          vec3 frame = vec3(0.95, 0.96, 0.98);
+          vec3 glass = diffuseColor.rgb * 1.12 + vec3(0.04, 0.08, 0.16);
+          diffuseColor.rgb = mix(frame, glass, win);
+          totalEmissiveRadiance += win * step(0.88, rnd) * vec3(1.0, 0.85, 0.5) * 0.45;
         }`,
       );
   };
-  material.customProgramCacheKey = () => (cylindrical ? 'building-cyl-v1' : 'building-box-v1');
+  material.customProgramCacheKey = () => (cylindrical ? 'building-cyl-v2' : 'building-box-v2');
   return material;
 }

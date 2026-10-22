@@ -47,10 +47,13 @@ export function CharacterModel({ onUnavailable, onLoaded }: Props) {
         const mat = mesh.material as any;
         if (mat) {
           if (typeof mat.roughness === 'number') {
-            mat.roughness = 0.62; // soft natural sheen to catch sunlight
+            mat.roughness = 0.35; // vibrant polished arcade sheen matching reference
           }
           if (typeof mat.metalness === 'number') {
-            mat.metalness = 0.04;
+            mat.metalness = 0.12; // rich material definition & specular reflections
+          }
+          if (typeof mat.envMapIntensity === 'number') {
+            mat.envMapIntensity = 1.35;
           }
         }
       }
@@ -95,7 +98,7 @@ export function CharacterModel({ onUnavailable, onLoaded }: Props) {
     };
   }, [gltf]);
 
-  const { actions, names } = useAnimations(gltf.animations, group);
+  const { actions, names, mixer } = useAnimations(gltf.animations, group);
 
   const idleNames = useMemo(
     () => names.filter((n) => /idle/i.test(n)),
@@ -117,6 +120,10 @@ export function CharacterModel({ onUnavailable, onLoaded }: Props) {
     () => names.find((n) => /^roll$/i.test(n)) || names.find((n) => ROLL_ANIMATION_PATTERN.test(n)),
     [names],
   );
+  const speedrunName = useMemo(
+    () => names.find((n) => /^speedrun$/i.test(n)) || names.find((n) => /speedrun|fastrun|sprint/i.test(n)),
+    [names],
+  );
   const fallName = useMemo(
     () =>
       names.find((n) => /^fall1$/i.test(n)) ||
@@ -129,6 +136,7 @@ export function CharacterModel({ onUnavailable, onLoaded }: Props) {
   );
 
   const activeAnimRef = useRef<string | null>(null);
+  const lastRollCountRef = useRef<number>(0);
   const currentIdleRef = useRef<string>('');
   const idleTimerRef = useRef<number>(0);
 
@@ -148,12 +156,26 @@ export function CharacterModel({ onUnavailable, onLoaded }: Props) {
   }, [runName, idleNames, actions, onUnavailable, onLoaded]);
 
   useFrame((_, dt) => {
+    if (getGameState().paused) {
+      if (mixer && mixer.timeScale !== 0) mixer.timeScale = 0;
+      return;
+    }
+    if (mixer && mixer.timeScale === 0) {
+      mixer.timeScale = 1;
+    }
+
     const status = getGameState().status;
-    const isMenu = status === 'menu';
+    const isMenu = status === 'menu' || status === 'home';
     const isCrashed = runtime.crashed || status === 'gameover';
     const isJumping = !runtime.grounded && !isCrashed && !isMenu;
     const isRolling = runtime.grounded && runtime.sliding && !isCrashed && !isMenu;
     const isRunning = runtime.grounded && !runtime.sliding && !isCrashed && !isMenu;
+    const isTurbo = runtime.turboTimer > 0 && !isCrashed && !isMenu;
+
+    // Keep roll tracking synchronized whenever not actively sliding or in menu
+    if (isMenu || !runtime.sliding) {
+      lastRollCountRef.current = runtime.rollCount;
+    }
 
     // Face the camera (yaw = 0) in menu; turn around (yaw = CHARACTER_YAW) when running
     if (yawGroup.current) {
@@ -195,12 +217,22 @@ export function CharacterModel({ onUnavailable, onLoaded }: Props) {
         desired = jumpName || flipName || runName || null;
       }
     } else if (isRolling) {
-      desired = rollName || runName || null;
+      desired = isTurbo && speedrunName ? speedrunName : (rollName || runName || null);
     } else if (isRunning) {
-      desired = runName || null;
+      desired = isTurbo && speedrunName ? speedrunName : (runName || null);
     }
 
-    if (desired && desired !== activeAnimRef.current) {
+    const isNewRoll =
+      isRolling &&
+      Boolean(rollName) &&
+      desired === rollName &&
+      runtime.rollCount !== lastRollCountRef.current;
+
+    if (isNewRoll) {
+      lastRollCountRef.current = runtime.rollCount;
+    }
+
+    if (desired && (desired !== activeAnimRef.current || isNewRoll)) {
       const prevName = activeAnimRef.current;
       const nextName = desired;
 
@@ -234,7 +266,13 @@ export function CharacterModel({ onUnavailable, onLoaded }: Props) {
           nextAction.clampWhenFinished = true;
           const clipDuration = nextAction.getClip().duration || 1.2;
           nextAction.timeScale = clipDuration / SLIDE_DURATION;
-          nextAction.fadeIn(0.08).play();
+          if (isNewRoll && prevAction === nextAction) {
+            // Already in roll animation – immediately restart from frame 0 at full weight
+            nextAction.setEffectiveWeight(1);
+            nextAction.play();
+          } else {
+            nextAction.fadeIn(0.08).play();
+          }
         } else if (/idle/i.test(desired)) {
           // Smooth loop for standing idle animations (idle1, idle2, idle3, idle4)
           nextAction.setLoop(LoopRepeat, Infinity);
@@ -257,6 +295,14 @@ export function CharacterModel({ onUnavailable, onLoaded }: Props) {
       } else if (status === 'playing') {
         const totalSpeed = Math.hypot(runtime.speed, runtime.vx * 0.45);
         runAction.timeScale = 0.7 + totalSpeed / 20;
+      }
+    }
+    if (speedrunName && actions[speedrunName]) {
+      const speedAction = actions[speedrunName];
+      if (status === 'gameover' || runtime.crashed) {
+        speedAction.paused = true;
+      } else if (status === 'playing') {
+        speedAction.timeScale = 2.0; // high-octane hyper-speed sprint cycle
       }
     }
   });

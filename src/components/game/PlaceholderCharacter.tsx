@@ -29,8 +29,9 @@ export function PlaceholderCharacter() {
   );
 
   useFrame((_, dt) => {
-    const isMenu = getGameState().status === 'menu';
-    if (getGameState().status !== 'gameover' && !isMenu) {
+    const status = getGameState().status;
+    const isMenu = status === 'menu' || status === 'home';
+    if (status !== 'gameover' && !isMenu) {
       phase.current += dt * (5 + runtime.speed * 0.42);
     } else if (isMenu) {
       phase.current += dt * 1.6; // gentle idle breathing

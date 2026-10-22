@@ -29,6 +29,7 @@ export function Player() {
   const body = useRef<Group>(null);
   const tilt = useRef<Group>(null);
   const isCustomModel = useRef(false);
+
   const handleModelLoaded = useCallback(() => {
     isCustomModel.current = true;
   }, []);
@@ -71,3 +72,4 @@ export function Player() {
     </group>
   );
 }
+

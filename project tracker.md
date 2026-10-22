@@ -1,0 +1,261 @@
+# Sparky Run (Doha Dash) — Project Tracker, Architecture & Change Log
+
+## 1. Project Overview
+
+**Sparky Run** (originally *Doha Dash*) is a fast-paced, high-fidelity 3D endless runner web game built using **React**, **TypeScript**, **Three.js** / **React Three Fiber** (`@react-three/fiber`, `@react-three/drei`), and **Vite**, styled with a custom high-contrast **Qatar-Burgundy Glassmorphic** UI system.
+
+Players control the energetic mascot **Sparky**, navigating an infinite procedural multi-lane track through a vibrant stylized city. The core gameplay loop features dodging road obstacles, leaping over barriers with a moon-gravity double-jump, sliding under overhangs, collecting glistening 24K gold coins, picking up magnetic power-ups to vacuum nearby coins across lanes, and striving for high scores.
+
+---
+
+## 2. System Architecture, Flows & Technical Setups
+
+### 2.1 State Management & Game Loop Architecture
+- **Hybrid State Pattern**:
+  - **Mutable High-Frequency Engine (`runtime` in `src/game/state.ts`)**: Runs at 60 FPS without React re-render overhead. Stores precise frame-by-frame physics (position `x, y, z`, velocities, distance, speed, mutable arrays for coins, obstacles, magnets, and sparkles).
+  - **Reactive UI Store (`gameState` via custom Zustand-style hook)**: Driven on low-frequency events or quantized ticks (score, lives remaining, active power-up status, digital magnet countdown time, game status: `'home' | 'menu' | 'playing' | 'gameover'`).
+- **Game Loop Execution Flow**:
+  1. `GameCanvas.tsx` invokes Three.js `useFrame((_, dt) => updateEngine(dt))`.
+  2. `engine.ts` advances distance (`distance += speed * dt`), increases speed (`speed = min(MAX_SPEED, speed + ACCEL * dt)`).
+  3. Updates player jump/slide physics and tests bounding-box collision with obstacles.
+  4. Updates Magnet countdown timer; if active, applies 22m magnetic pull vector to all nearby coins across all 3 lanes.
+  5. Spawns, recycles, and animates procedural chunks, hoardings, coins, magnets, and sparkles.
+  6. Dispatches quantized state updates to `setGameState()` for HUD rendering.
+
+### 2.2 Curved-World Vertex Shader Pipeline (`bendMaterial.ts`)
+- To simulate the classic Subway Surfers cylindrical horizon curvature without bending Three.js scene geometry, custom GLSL vertex shader chunks (`applyBend`) are injected into all world materials (`MeshStandardMaterial`, `MeshBasicMaterial`).
+- **Shader Formula**:
+  $$\Delta y = -\text{curvature} \times z^2$$
+- Automatically curves road asphalt, buildings, obstacles, roadside hoardings, coins, and power-up models smoothly toward the horizon relative to camera distance.
+
+### 2.3 Collectibles & Magnetic Attraction Flow
+- **Coin Spawner (`crystals.ts`)**: Procedurally generates sequences of coins in straight lane lines, zig-zags, and vertical parabolic arcs matching Sparky's jump trajectory.
+- **Magnetic Pull Vector Math (`engine.ts`)**:
+  - When `magnetTimer > 0`, any coin within $Z \in [-2.0\text{m}, +22.0\text{m}]$ relative to Sparky is flagged as `c.attracted = true`.
+  - Attracted coins accelerate toward Sparky's current $(x, y, z)$ position across lanes at $24\text{ m/s}$.
+  - Upon reaching Sparky, the coin is marked `c.collected = true`, triggering the stationary sparkle burst and initiating the 3D-to-2D parabolic flight toward the top-right HUD coin pill.
+
+### 2.4 Persistent Three.js Mesh Pool Architecture (`Magnets.tsx`)
+- High-frequency simulation objects like power-ups must never rely on React JSX array mapping (e.g. `{runtime.magnets.map(...)}`), because React does not re-render during `useFrame`.
+- **Solution**: Pre-allocate a fixed pool of persistent Three.js `<group>` instances at mount time. Transforms, positions, visibility toggles, rotations, and scale pulses are updated directly on the Three.js Object3D references inside `useFrame`.
+
+---
+
+## 3. Comprehensive Chronological Feature Log
+
+### Phase 1: Core Character Integration & Animation State Machine
+- **Custom 3D Character Model**: Integrated `character.glb` with rigged skeletal animations, replacing primitive placeholder shapes.
+- **Dynamic Animation Blending**:
+  - Implemented smooth cross-fading state machine supporting `Idle1`, `Idle2`, `Idle3`, and `Idle4` (randomly cycled while standing in the menu), `Run`, `Roll`, `Jump`, and `Crash/Fall`.
+  - Added camera-facing stance on the start screen; Sparky turns 180° away from the camera into the running stance when the game begins.
+- **Fluid Lane Switching & Banking**:
+  - Implemented responsive left/right lane shifting across 3 defined lanes.
+  - Added smooth Y-axis rotation and Z-axis body roll banking toward the direction of travel to eliminate stiff transitions.
+- **Physics-Tuned Double Jump & Flip**:
+  - First jump executes standard leap; jumping while in mid-air initiates an acrobatic flip animation with a slight upward lift and moon-gravity hang time before falling.
+  - Adjusted jump velocity and arc to prevent abrupt snapping.
+- **Slide & Roll Mechanics**:
+  - Downward swipe or key press triggers a rolling tumble with lowered collision profile, smoothly chaining consecutive slides without animation freezing.
+- **Crash & Fall Sequence**:
+  - When colliding with obstacles, Sparky plays a realistic stumble/fall animation, lingering on the ground for 3 seconds before transitioning to the Game Over screen.
+- **Visual Polish**:
+  - Increased character scale by 15% for optimal arcade screen presence.
+  - Replaced flat disc shadow with dynamic Three.js contact shadow underneath the character.
+
+---
+
+### Phase 2: Engine Architecture, Progression & Controls
+- **Bended-World Shader Track**:
+  - Curvature deformation vertex shader applied to road, buildings, and obstacles to create a curved-horizon arcade runner feel.
+- **Speed Progression Curve**:
+  - Calibrated starting speed to 16 m/s with progressive linear acceleration (+0.05 m/s²), capped at a top speed of 30 m/s.
+- **Touch & Swipe Input System**:
+  - Implemented directional gesture recognition with isolated axis thresholds to prevent accidental double-lane hops or unintentional jumps while dodging.
+- **Keyboard Controls**:
+  - Full keyboard mapping (`A`/`D` and `Left`/`Right` for lanes; `W`/`Up`/`Space` for jump; `S`/`Down` for roll; `Space`/`Enter` to start; `F` for inspection pause).
+- **Fullscreen Engagement**:
+  - Automatic browser fullscreen activation upon clicking Play or Start.
+
+---
+
+### Phase 3: World Generation, Buildings & Advertising
+- **Infinite Procedural Track Chunks**:
+  - Dynamic chunk recycling generating track geometry, street barriers, curbs, and lane markings.
+- **Cityscape & Environmental Decor**:
+  - Side buildings, modern towers, palm trees, and roadside barriers.
+- **Roadside Hoardings & Advertising Banners**:
+  - Placed randomized advertising billboards and sponsor banners along road shoulders and building facades, calibrated for authentic street immersion.
+- **Skybox Environment**:
+  - Integrated high-resolution panoramic sky backdrop (`image copy.png`) replacing default background gradient.
+- **Shadow Optimization**:
+  - Disabled heavy cascade shadow casting on buildings, trees, and obstacles to maintain 60 FPS performance, focusing soft shadows exclusively on the character.
+
+---
+
+### Phase 4: Lighting & Atmospheric Tuning
+- **Warm Golden-Hour Sunlight**:
+  - Configured directional sun lighting and ambient bounce to replicate Mediterranean/Gulf golden-hour ambiance.
+- **Road Luminance Correction**:
+  - Toned down excessive road specular highlights and harsh yellow wash, restoring balanced asphalt contrast.
+- **PMREM Environment Reflections**:
+  - Integrated high-dynamic-range environment mapping for realistic metallic reflections on coins, magnets, and character accessories.
+
+---
+
+### Phase 5: Audio & Sound Effects
+- **Background Music (BGM)**:
+  - Integrated arcade soundtrack (`bgm.mp3`) with automatic loop, pause on crash/gameover, and restart on replay.
+- **Synthesized Web Audio FX**:
+  - Multi-chord ascending sparkle chimes for coin collection.
+  - Deep electromagnetic pulse and surge sound when picking up the Magnet.
+- **Audio Controls**:
+  - Mute/unmute button available on menu screens; hidden during active gameplay for a clean screen experience.
+
+---
+
+### Phase 6: Brand UI & Qatar-Burgundy Glassmorphism Design System
+- **Fullscreen Home Screen**:
+  - Replaced modal overlay with a fullscreen landing screen featuring the official game logo (`sparky_run.webp`).
+  - Custom hexagonal arcade button suite (`PlayButtonHex`, `LeaderboardButtonHex`, `RewardsButtonHex`) styled with gold borders, dark crimson glass, and neon accents.
+- **Start / Staging Screen**:
+  - Camera frames Sparky proudly in front view while idle animations play.
+  - Centered hexagonal "RUN" action trigger positioned above control instructions.
+- **Gameplay HUD**:
+  - **Top-Left**: Sparky profile pill with circular avatar image (`image.png`), bold player tag, and 3 glowing heart lives (smoothly greying out upon damage).
+  - **Top-Right**: Gold coin collection pill with custom embossed 24K gold coin SVG badge, bold count digits, and pop-pulse animation on increment.
+  - Signature Qatar-maroon gradient (`#e61937` to `#7a0619`), pink frosted glass borders, and backdrop blur.
+- **Inspector / Pause Mode**:
+  - Pressing <kbd>F</kbd> instantly pauses game physics and simulation time, allowing in-game inspection of 3D models and alignment.
+
+---
+
+### Phase 7: Collectibles, Visual VFX & Parabolic Flight
+- **3D Gold Coin Collection**:
+  - Integrated `Goldcoin.glb` with custom 24K arcade gold PBR material properties (roughness 0.8, metalness 1.0, gold diffuse body, emissive depth, and PMREM environment reflections).
+  - Coin patterns generated across single lanes and jumping arcs matching Sparky's double-jump trajectory.
+- **Sparkle Burst Effects**:
+  - Stationary golden sparkle burst particles emitted at the exact point of pickup without backward drifting.
+- **Swooping Coin Flight Animation**:
+  - Upon collection, 3D coins launch towards the top-right HUD collection pill in an upward parabolic arc, smoothly shrinking as they deposit into the HUD pill.
+
+---
+
+### Phase 8: Power-Up System (3D Magnet & Magnet HUD)
+- **Magnet Item Generation**:
+  - Integrated `magnet.glb` spawning on the track starting at distance 32m, recurring every 85–130m.
+- **10-Second Magnetic Surge Ability**:
+  - Pulls all uncollected coins within a 22-meter radius across all 3 lanes directly toward Sparky.
+- **Persistent Three.js 3D Mesh Pool**:
+  - Refactored `Magnets.tsx` to use pre-allocated Three.js groups driven directly in `useFrame`, eliminating React re-render dropped meshes.
+  - Scaled to `0.0048` with candy-red arch (`#ff1a3c`) and chrome-silver pole caps.
+- **Magnet 3D Orientation & Animation**:
+  - **Upright U-Shape**: Silver tips point UP (`MAGNET_ROT_Z = -90°`).
+  - **45° Camera Tilt**: Angled 45° back towards the camera (`MAGNET_ROT_X = 45°`) for clear face visibility.
+  - **Continuous Y-Axis Spin**: Magnet continuously rotates around the vertical Y axis.
+  - **Breathing Pulse**: Smooth rhythmic scale pulsation (±8%) giving the power-up an active arcade glow.
+  - **Aura Halo Ring**: Electric cyan aura ring oriented with 90° Z rotation, encircling the magnet.
+- **Minimalist Magnet HUD**:
+  - Slides in below the coin collection pill when collected with matching Qatar-maroon glassmorphic theme.
+  - Features a clean rounded white circular badge containing the official vector magnet icon (`/assets/magnet.svg`) and a gleaming gold progress bar (removed textual labels and numeric timer for an uncluttered arcade look).
+
+---
+
+## 4. Iterative Design Decisions & Change Rationale Log (Pivots & Why)
+
+This log explicitly tracks changes where an initial implementation was tested, found suboptimal or problematic, and subsequently redesigned:
+
+| # | Feature / Area | What Was Originally Implemented | What It Was Changed To | Reason / Rationale for Change |
+|---|---|---|---|---|
+| 1 | **Character Model** | Custom built primitive shapes | Integrated official `character.glb` | Low visual fidelity; lacked skeletal animations and personality. |
+| 2 | **Jump Physics** | Rigid linear jump | Slight moon-gravity float + mid-air flip double jump | Original jump felt stiff, dropped too quickly, and lacked vertical gameplay agility. |
+| 3 | **Double Jump Height** | Uncapped vertical boost | Capped double jump height with natural velocity falloff | Second jump was launching Sparky out of camera frame and clipping overhead banners. |
+| 4 | **Consecutive Rolls** | Roll animation had fixed lock duration | Resets animation action timer on consecutive trigger | Rolling while already rolling caused character to slide stiffly upright without rolling again. |
+| 5 | **Lane Switching** | Instant linear X translation | Added Y-axis yaw turning (15°) and Z-axis body roll banking | Instant movement looked mechanical; banking gives realistic weight, inertia, and arcade responsiveness. |
+| 6 | **Touch / Swipe Controls** | Unfiltered touch coordinates | Debounced lane shift cooldown (0.2s) & dominant axis isolation | Rapid flicks caused accidental double-lane skips and inadvertent rolls while dodging. |
+| 7 | **Roadside Hoardings** | High billboard density on every chunk | Halved hoarding frequency and randomized placement | Screen was overly cluttered, obscuring visibility of upcoming lane obstacles. |
+| 8 | **Environment Shadows** | Directional shadow mapping on all buildings & trees | Disabled environment shadow casting; kept soft shadow solely on Sparky | Severe framerate drops and stutter on lower-end devices due to heavy shadow map cascades. |
+| 9 | **Road Sunlight** | High-intensity directional sunlight on road surface | Toned down asphalt diffuse luminance and specular intensity | Road was overly bright and washed out into yellow, making lane markings and coins hard to see. |
+| 10 | **Sky Background** | Procedural Three.js gradient sky | Panoramic cityscape sky backdrop image (`image copy.png`) | Gradient looked sterile; real sky backdrop grounds the scene into an authentic Doha urban landscape. |
+| 11 | **Collectible Model** | Blue crystal (`crystal.glb`) with crystal HUD icon | 3D Gold Coin (`Goldcoin.glb`) with embossed gold coin HUD badge | Gold coins fit standard runner arcade conventions and match the Qatar brand aesthetic better. |
+| 12 | **Coin Material Quality** | Raw GLB import material | Upgraded PBR (roughness 0.8, metalness 1.0, emissive `#1c1400`, PMREM envMap 3.2) | Initial import looked matte, dull, and flat under sunlight; PBR gives dazzling 24K specular glints. |
+| 13 | **Coin Inspector Mode** | On-screen UI sliders for coin scale and XYZ rotation | Removed UI sliders; bound <kbd>F</kbd> key purely to pause/freeze simulation time | Sliders cluttered gameplay once ideal values were set; kept pause-to-inspect for asset verification. |
+| 14 | **Coin Collection Sparkles** | Uncollected coins on track emitted sparkles | Removed sparkles from track coins; emit stationary burst on pickup only | Sparkles on track coins caused visual noise; pickup burst gives clean, punchy collection feedback. |
+| 15 | **Sparkle Particle Drift** | Particles drifted backward along the track | Anchored sparkle burst stationary at Sparky's pickup position | Backward drift made sparkles look like exhaust smoke rather than a rewarding golden glint. |
+| 16 | **Coin HUD Deposit** | Coins simply vanished upon collection | Parabolic 3D-to-2D flight arc shrinking into top-right coin counter pill | Connected 3D world interaction directly to HUD score feedback with juicy arcade motion. |
+| 17 | **Magnet 3D Mesh Rendering** | JSX array mapping `{runtime.magnets.map(...)}` | Pre-allocated Three.js `<group>` pool driven directly in `useFrame` | `runtime.magnets` is high-frequency simulation state; React didn't re-render, so magnets were invisible. |
+| 18 | **Magnet HUD UI** | Generic dark navy progress bar with no digital numbers | Qatar-maroon glassmorphic pill with large bold digital countdown (`10.0s`) & gold bar | Matched the visual style of score and coin pills and clearly communicated exact remaining time. |
+| 19 | **Magnet 3D Orientation** | Raw GLB orientation had tips pointing along -X (sideways) | Rotated Z by -90° (tips point UP) and tilted X by 45° towards camera | Sideways orientation looked like a horizontal hook; 45° upright orientation shows iconic U-shape to runner. |
+| 20 | **Aura Ring & Magnet Motion** | Parent tilt rotated child aura ring onto its vertical edge | Rotated aura ring 90° in Z, added continuous Y-axis rotation and breathing pulse (±8%) | Restored proper horizontal ring alignment and gave the magnet dynamic, pulsing life as an arcade power-up. |
+| 21 | **Magnet HUD Layout** | Displayed "MAGNET" label and digital numbers (e.g. 10.0s) with inline SVG | Minimalist pill with rounded white circular badge containing `magnet.svg` and gold progress bar only | User requested an uncluttered HUD display with visual-only progress bar and official vector icon on clean white background. |
+| 22 | **Session Cleanup on Home/Menu Entry** | Items (coins, magnets, obstacles) remained in engine memory and instanced buffers upon losing/exiting to home | Created `resetRunSession()`, flushed arrays, cleared spawners, and forced `mesh.count = 0` / hidden groups in `Crystals.tsx`, `Magnets.tsx`, `Obstacles.tsx` when `status === 'home' || status === 'menu'` | When returning from a lost game to Home and pressing Play again, leftover coins (both mid-air HUD arc coins and track coins) stayed visible and floating around Sparky on the start staging screen. |
+| 23 | **Character Ground Shadow** | Procedural radial gradient contact shadow disc rendered on a plane beneath Sparky's feet | Removed the radial shadow mesh and related texture logic from `Player.tsx` | User requested to remove the round shadow from beneath the character for a cleaner visual aesthetic. |
+| 24 | **Coin Collection Audio** | Web Audio API procedural sine-wave synthesizer chime | Integrated user-provided `/coin.mp3` audio asset via Web Audio API `decodeAudioData` buffer with multi-voice polyphony and an `HTMLAudioElement` pool fallback | User provided `public/coin.mp3` to replace procedural synthesizer chimes with the authentic coin collection sound effect. |
+| 25 | **Magnet & Coin Spawn Balancing** | First magnet at 32m and subsequent magnets every 85–130m; dense coin lines every 18–30m with 7-coin hurdle arcs | Spaced first magnet to 110m and subsequent magnets to 220–340m; widened coin line intervals to 26–42m, reduced trail size to 3–5 coins, and streamlined hurdle arcs to 5 coins | User requested to reduce magnet frequency so the power-up feels rewarding and rare, and reduce coin density slightly for better visual breathing room. |
+| 26 | **Time-Based Magnet Spawning & Active Overlap Prevention** | Static distance-based spawning (next magnet spawned while current 10s magnet effect was still active) | Refactored `MagnetSpawner` to track active run duration; first magnet appears between 40s–60s (1 min), subsequent magnets require a 40s–90s (1.5 min) gap, and spawning is strictly suppressed while `isMagnetActive` or when a magnet is uncollected on track | User observed that after collecting a magnet, the next one was already appearing on the track before the 10-second duration ran out; required definite 40s–1m initial delay and 40s–1.5m cooldown between magnets. |
+| 27 | **Thunderbolt Turbo Power-up System** | Only Coin and Magnet pickups existed | Integrated `/assets/powerup.glb` (Thunderbolt pickup), `speedrun` character animation, `LightningSparks` visual FX, 8x hyper-speed boost for 8s + 2s deceleration ease-down, complete obstacle collision immunity, wide-range automated coin vacuum, and electric HUD progress bar pill | User requested a rare thunderbolt power-up that makes Sparky run 8x faster for 8s (then 2s decel) with lightning sparks, fastrun animation, full obstacle immunity, automatic coin collection, and placed at the start for testing. |
+| 28 | **Turbo Coin Attraction Range & "The Flash" Lightning Trail** | Fast run vacuumed coins across entire visible horizon (75m range); simple spark particles emitted from character | Reduced fast-run coin attraction range from 75m to 16m; completely overhauled `LightningSparks.tsx` into a high-energy "The Flash" speed force system featuring 14 dynamic jagged lightning bolts with acute zig-zag kinks and secondary branches, twin Speedforce wake ribbons streaming behind Sparky that snake during lane shifts, 4 ground road surface electric discharge arcs, high-speed flying spark particles, and high-voltage flickering Speedforce dynamic lighting | User reported coins were being attracted from way too far away when running fast, and requested to reduce the attraction distance as well as add a continuous lightning trail effect behind the character like "The Flash" running. |
+| 29 | **Turbo Power-Up Collection Audio** | Web Audio API procedural synthesizer (sawtooth bass + rising laser) | Integrated user-provided `/assets/power.mp3` via Web Audio API `decodeAudioData` buffer with zero-latency playback and an `HTMLAudioElement` fallback | User provided `public/assets/power.mp3` to replace procedural synthesizer effects with the authentic power-up pickup audio when collected. |
+| 30 | **Turbo Power-Up Active Music Theme & Fading Dynamics** | No background theme music during hyper-speed turbo; only initial sound effect played | Integrated user-provided `/assets/powerup.mp3` as the active power-up speed theme music, started via `startTurboMusic()` with a smooth **0.6s volume fade-in** and background music ducking (down to 18%), and ended via `stopTurboMusic()` with a smooth **1.0s volume fade-out** initiating 1s before turbo expiration or upon crash/reset | User requested to use `/assets/powerup.mp3` while starting powerup, with a 0.6-second fade-in and a 1.0-second fade-out. |
+| 31 | **Thunderbolt Power-Up Production Cadence** | Initial test pickup spawned immediately at the start ($d=16\text{m}$) | Removed start spawn; power-up now appears only after **1 minute** of active gameplay ($60\text{s}\text{–}75\text{s}$), with subsequent spawns appearing randomly at **1–2 minute intervals** ($60\text{s}\text{–}120\text{s}$) with active turbo & on-track overlap suppression | User confirmed testing was complete and requested to remove the initial start spawn, letting it appear only after 1 minute of game, then in random intervals of 1–2 minutes. |
+| 32 | **Popular Electricals Brand Campaign: Mandatory Registration, Tabbed Live Leaderboards & Retail Rewards Hub** | Static mock player names with no customer registration, verification, or store voucher claims | Implemented mandatory customer onboarding modal (Name, Qatar `+974` default with international country selector, phone validation, and identity verification consent for in-store redemption), live tabbed leaderboards (**Today's Board** in Qatar AST `UTC+3` and **All-Time Global**), Popular Electricals brand store vouchers with scannable barcode cards and verified phone badges (`POP-XXXX-QAT`), a live community claims feed ("Who Claimed What"), showroom QR share dialog, and client API service (`popularApi.ts`) mapped to the user's DigitalOcean Node.js/Express + PostgreSQL backend with offline fallback | Converted Doha Dash into a full customer loyalty marketing activation for Popular Electricals of Qatar as requested by user. |
+| 33 | **Popular Electricals Cybernetic Sci-Fi Start & Onboarding Page** | Standard maroon modal dialog overlay with basic form styling | Re-engineered into a full-screen cyberpunk start page matching the user's reference mockup: extracted white transparent PET Popular Electricals logo (`/pet_logo_white.png`), beveled `SPARK RUNNER ⚡` metallic header notch, floating 3D `sparky_run.webp` logo, glowing crimson armor chassis with chamfered bevels, Full Name input with red 👤 icon, Mobile Number input with Qatar `QA +974` country code dropdown selector and red 📞 icon, security consent card with custom red checkbox, glowing red shield/lock badge (`🛡️`/`🔒`) and highlighted brand verification terms, high-impact beveled octagonal gaming CTA button (`REGISTER & START PLAYING ➔`), bottom slogan divider (`── ⚡ ── POWERING YOUR LIFE`), and animated cyber circuit SVG traces with glowing neon perspective horizon grid floor | User requested to design the start page matching their reference image with the PET logo and Sparky Run logo. |
+| 34 | **Two-Step Login & Registration Flow (Phone Lookup & Auto-Login)** | Single-step form asking for Name, Phone, and Consent simultaneously | Overhauled into a 2-step authentication flow: Step 1 prompts for Mobile Number and Verification Consent and checks the database/registry via `popularApi.checkCustomerByPhone()`. If the customer already exists, they are automatically logged in without needing to enter their name again. If the customer is new, they transition to Step 2 to input their Full Name with their confirmed phone displayed at the top and a "Change Phone" shortcut. All user styling edits (removal of notch plate and footer slogan, streamlined subtitle, and updated consent phrasing) were strictly preserved | User requested a 2-step login flow that asks for phone number first to check if the user exists in the DB and log them in, only asking for name if they are new. |
+| 35 | **Start Page Visual Ergonomics & Mobile UI Refinements** | Oversized top Popular logo, large sound toggle circle, nested red concentric borders, country code trigger showing country prefix ('QA'), dense legal consent block, and always-enabled CTA button without inline input error indicators | Overhauled registration screen: reduced Popular logo to ~25-28% screen width (108px) and tightened top spacing; enlarged Sparky Run logo (235px) with subtle ambient red backlight as primary visual emphasis; country code trigger displays ONLY the dial code ('+974 ⌵'); unmistakable near-black input fields (#0c0d11) against lighter charcoal card (#1c1d24) with 1px muted borders, 50px height, readable placeholder gray, and bright white text (16px); stripped out nested red outlines in favor of a single sleek card with subtle background lightning paths; simplified consent into a clean 1-line verification consent with larger 22px checkbox and optional marketing update toggle; solid red CTA button with disabled state and inline input validation errors; audio toggle reduced to sleek 32px icon button; guaranteed complete mobile viewport fit | User provided visual review and requested refinements to logo sizing, spacing, country code display, input clarity, card outlines, consent simplification, CTA validation states, and audio toggle button. |
+| 36 | **Phone Input Strict 8-Digit Constraint & PET Logo Scaling** | Phone field displayed an inline character counter error message with variable length tolerance; PET logo set to 108px; leftover optional marketing block in JSX | Removed inline error message; strictly fixed phone input to exactly 8 digits (`selectedCountry.digits`), preventing over-typing; removed unused marketing consent element; increased PET Popular Electricals logo size to 175px (44% screen width) for balanced brand proportions | User requested not to show the 8-digit error message, fix the phone field directly at 8 digits, and slightly increase the PET logo size. |
+| 37 | **Official Popular Electricals Showroom Address Cards below PET Logo** | No retail showroom physical store addresses displayed on the start/onboarding page | Added two official showroom address cards (**NAJMA SHOWROOM** and **BARWA VILLAGE SHOWROOM**) directly beneath the PET Popular Electricals logo: extracted Najma address ('Opposite Souq Harraj Gate 1&2 Lavilla Appartments Building Najma-Doha', Ph: 44271794, Fax: 44419758, shop1@popularqatar.com) and Barwa Village address ('Shop No 11, Building No. 4, Wakrah Road, Barwa Village', Ph: 44153195, Fax: 44153195, shop4@popularqatar.com), rendered with clean white card styling, navy uppercase titles, dark bold addresses, olive green contact details matching brand flyer graphics, and click-to-call / click-to-email links | User provided an image of their official store banner cards and requested to add their showroom addresses below the PET logo. |
+| 38 | **Start Page Background Ambient Brightening** | Heavy pitch-black background (`#0b0709`) and dense outer radial mask (`rgba(11, 7, 9, 0.96)`) made the start page feel excessively dark | Brightened viewport background with a warm dark-slate/charcoal ambient gradient (`radial-gradient(ellipse at 50% 18%, #291e28 0%, #1c1824 45%, #13121a 100%)`), layered soft multi-stop crimson & slate diffused ambient lighting (`rgba(255, 38, 71, 0.28)`, `rgba(65, 52, 80, 0.4)`), and increased circuit trace visibility (opacity 0.45) for improved contrast, depth, and clarity | User requested to slightly brighten the background instead of this much darkness. |
+| 39 | **Post-Login / Registration Navigation to Home Screen** | Completing registration or logging in immediately auto-launched the game runner (`handlePlayGame()`) bypassing the main Home screen | Refactored `handleCustomerRegistered` in `HomeScreen.tsx` to set the customer profile, dismiss the registration modal, and stay on `HomeScreen` instead of immediately launching gameplay; players now land directly on the Home dashboard showing their profile pill, high scores, Rewards, and Leaderboard with the option to click the Play button whenever they are ready | User requested that when 'START PLAYING' is clicked or when logging in, go to home instead of directly playing. |
+| 40 | **Home Screen Top-Left 3D Player Profile Badge & Bottom PET Logo** | Top bar had commented-out legacy pills; missing quick player status HUD and brand presence at the bottom | Added a 3D-styled player profile badge on the top-left inspired by the reference design: circular golden ring avatar with Sparky head (`/image.png`), connected chamfered crimson chassis with uppercase player name, and 3D arcade stat bar styled like the home buttons showing **Global Rank** (`#rank`), **Best Score**, and **Total Score**; added top-right 3D QR button; added the official white PET logo (`/pet_logo_white.png`) centered directly below the Leaderboard and Rewards buttons | User requested to add a similar UI on top-left of homepage with Sparky head (`image.png`), 3D style similar to home buttons displaying global rank, best score, total score, and PET logo below leaderboard/rewards. |
+| 41 | **Home Screen Layout Refinement: Top-Right QR Removal & Central 3D Stats Row** | QR button was positioned on top-right; player stats were squeezed inside the top-left profile badge | Removed top-right QR button for an uncluttered top header; streamlined top-left profile badge to display Sparky head avatar with gold ring, player name, and dynamic level pill (`[ LEVEL 01 ]` matching the reference image); relocated **Rank**, **Best Score**, and **Total Score** into a prominent 3-card 3D beveled status row positioned directly between the central hexagonal **PLAY** button and the secondary buttons (**Leaderboard** & **Rewards**) | User requested to remove the QR button from the top right and put Rank, Best, and Total between the Play button and other buttons. |
+| 42 | **Standalone Full-Screen Pages for Leaderboard & Rewards Hub (Page Architecture Transition)** | Leaderboard and Rewards Hub were modal dialog overlays (`home-modal-backdrop` + `home-modal-card` max-height 85vh) rendered over the 3D canvas with cramped scrolling | Converted both into dedicated full-screen standalone pages (`LeaderboardPage` & `RewardsPage`) featuring a sticky cyber header bar with a tactile 3D `← BACK` button, center campaign titles, and PET logo on the right; full natural scrollable height for score rankings and retail vouchers; prominent `← BACK TO HOME` footer CTA; and seamless view transitions in `HomeScreen` and `GameOverScreen` | User requested to make the leaderboard and rewards separate pages instead of modals. |
+| 43 | **Decluttered 3D Leaderboard Page: Header Simplification, Top User Rank, 3D Top-3 Podium Stands & Coin Cards from #4** | Top header had back button, PET logo, and Qatar subtitle; rank card was at bottom; tabs had sub-texts with emojis; info banner cluttered the view; all entries were flat list rows showing masked phone, date, and meters | Redesigned into a clean, arcade 3D leaderboard: stripped header down to only 'LIVE LEADERBOARD' with golden SVG trophy (removed top back button, PET logo, and subtitle); positioned 'YOUR RANK' 3D card prominently right below the heading; simplified tabs to 'TODAY' and 'ALL TIME' with crisp SVG icons (no subtexts/emojis); removed subtitle banner; introduced a 3D Top 3 podium with metallic pedestals (Gold #1 center tallest with crown, Silver #2 left, Bronze #3 right) displaying SVG medals, player name, and coins; rendered remaining entries from #4 onwards as beveled 3D tactile cards showing ONLY rank, player name, and coins (removed phone, date, and distance); retained bottom '← BACK TO HOME' button; applied across both Today and All-Time Global boards | User requested to declutter leaderboard, remove top back button and PET logo, show live leaderboard with trophy icon, display your rank on top below heading, clean tabs with icons, remove today's top customer text, show top 3 on stands with medals, and display users from #4 as 3D cards with only name and coins. |
+| 44 | **Smooth Mobile UI Redesign for Leaderboard Page (Reference Screenshot Match in Crimson Red Theme)** | Hard, angular 3D pedestals and dark blocky borders felt 'too AI-built' and lacked visual fluidity | Completely overhauled Leaderboard into a modern, fluid gaming UI inspired by the user's reference mockup: top header with circular translucent back button, centered title ('Leaderboard'), and circular search button; capsule segmented control ('Daily', 'Monthly', 'All time') with smooth active red pill and diffused glow; floating Top-3 podium layout with glowing circular avatar badges (initial letters, no broken images needed), overlapping circular rank pills (`1`, `2`, `3`), floating golden 3D crown on 1st place, player names, and coin points; clean table column header strip ('Rank', 'Player', 'Points'); smooth pill-card rows for #4+ with luscious crimson-ruby gradients, diffused box-shadows, initial monograms, and highlighted current user card (`Name(You)`); converted purple palette of reference image into Popular Electricals crimson red theme | User provided a reference screenshot of a modern, smooth mobile leaderboard and requested to match its layout, soft shadows, floating circles with crown, capsule tabs, and card rows, substituting the purple palette for our crimson red theme without profile pictures. |
+| 45 | **Leaderboard Tabs Simplification: Daily & All Time Only** | Capsule segmented control showed three tabs ('Daily', 'Monthly', 'All time') | Removed 'Monthly' tab; streamlined capsule tabs to strictly two options: **'Daily'** and **'All time'** | User requested no need for monthly, only daily and all time is needed. |
+| 46 | **Smooth Rewards Page Redesign: Matching Leaderboard Style & Decluttered Header** | Rewards Hub had cluttered header text, brand subtitle, long paragraphs of legal terms, and 3 tab buttons | Redesigned to match the modern smooth Leaderboard aesthetic in crimson red: single-word header title ('Rewards') with circular translucent back button and coin balance pill; capsule segmented tabs ('Rewards' and 'My Vouchers'); decluttered reward cards with smooth ruby-crimson gradients, glowing discount badges, concise requirements (coins & meters), and sleek claim/view buttons; streamlined cashier voucher barcode dialog | User requested to use leaderboard style for rewards page too, and just use one word reward instead of too much cluttered text. |
+| 47 | **Rewards Page: Daily Winners Tab** | Secondary tab displayed personal claimed vouchers labeled 'My Vouchers' | Replaced 'My Vouchers' tab with **'Daily Winners'**, rendering a real-time community winner feed (`popularApi.getLiveClaimsFeed()`) styled with smooth crimson cards, player initials, reward prizes won, timestamps, verified badges, and quick-access barcode viewing for user-owned claims | User requested: "in rewards instead of my vouchers use daily winners". |
+| 48 | **Rewards Hub & Daily Winners Overhaul: Point Milestones & Previous Dates Feed** | Generic discount vouchers requiring meters; flat unorganized winners feed | Updated Rewards tab to 5 merchandise items unlocked with points (**Keychain** @ 7,000, **Keychain + Cap** @ 10,000, **Keychain + Pen** @ 16,000, **Diary** @ 20,000, **Shirt** @ 30,000) with a sleek progress bar showing limit to reach and Claim button without text clutter; updated Daily Winners tab to group by previous dates displaying exactly three names of winners per date with metallic rank medals (`🥇`, `🥈`, `🥉`) and prizes | User specified the 2 reward types: point-redeemable rewards (7k, 10k, 16k, 20k, 30k) with progress bar, and daily winners grouped by date showing three names of winners of previous dates. |
+| 49 | **Home Screen Lives Left Capsule UI** | No lives status displayed on the home screen prior to launching a game session | Created and integrated `LivesLeftDisplay.tsx` positioned directly beneath the main Play button on the Home screen; displays 3 total heart containers featuring 2 active ruby-crimson filled hearts with animated heartbeat pulses and 1 empty heart container with dark translucent fill and muted border (`2/3 LIVES LEFT`) | User requested: "below the play button add livesleft ui with three hearts. if no life then one empoty heart. show 2 livesleft ui for now". |
+| 50 | **Heart Vector Path Symmetry Fix (Full Hearts Restoration)** | Compressed coordinate token caused browsers to abort parsing at center cleft, displaying half-hearts cut with a vertical edge | Replaced SVG path with the standard, perfectly symmetrical, full vector heart path (`viewBox="0 0 512 512"`) in both `LivesLeftDisplay.tsx` and in-game HUD `ScoreDisplay.tsx`, restoring full, plump, rounded hearts for both filled and empty containers | User provided screenshot: "why are the hearts like this. show full hearts". |
+
+---
+
+## 5. Technology Stack & File Architecture Reference
+
+| Layer | Technologies & Patterns |
+| :--- | :--- |
+| **Framework** | React 18, TypeScript, Vite |
+| **3D Rendering** | Three.js, `@react-three/fiber`, `@react-three/drei` |
+| **Shaders** | Custom GLSL vertex bending shaders (`bendMaterial.ts`) |
+| **Audio** | HTML5 Audio (`bgm.mp3`, `coin.mp3`) + Web Audio API synthesizer (`audio.ts`) |
+| **State Management** | Zustand-style lightweight game state store (`state.ts`, `engine.ts`) |
+| **Styling** | Vanilla CSS Design Tokens, Glassmorphism, Qatar Crimson Theme (`global.css`) |
+
+### Key Source Files:
+- `src/components/game/CharacterModel.tsx`: 3D Sparky model, bone animations (`run`, `speedrun`, `jump`, `flip`, `roll`, `fall`), and state transitions.
+- `src/components/game/Player.tsx`: Player controller, lane dampening, jump physics, and collision logic.
+- `src/components/game/Crystals.tsx`: 3D gold coins, instanced rendering, shiny PBR materials, and HUD swoop flight.
+- `src/components/game/Magnets.tsx`: 3D power-up magnet model, orientation, Y-rotation, pulse, and aura ring.
+- `src/components/game/Powerups.tsx`: 3D power-up thunderbolt model, high-voltage rotation, and electric energy ground halo.
+- `src/components/game/LightningSparks.tsx`: Electric lightning arcs and spark particles streaming off Sparky during turbo boost.
+- `src/components/game/CoinSparkles.tsx`: Burst sparkle particles on coin collection.
+- `src/components/ui/ScoreDisplay.tsx`: Top HUD (Sparky profile, hearts, coin pill, magnet timer & turbo timer pills).
+- `src/components/ui/HomeScreen.tsx` & `StartScreen.tsx`: Hexagonal button menus and staging UI.
+- `src/game/engine.ts`: Master game loop, procedural generation, obstacle collision immunity, turbo speed curve, and magnetic/turbo pull logic.
+- `src/game/magnets.ts` & `powerups.ts`: Spawning cadence, non-overlapping cooldown timers, and placement math.
+- `src/styles/global.css`: Complete styling, animations, gradients, and responsive breakpoints.
+
+---
+
+## 6. Living Change Logging Protocol
+
+For all future development steps, features, setups, and architectural changes, follow this mandatory logging structure:
+
+1. **New Features**: Document the feature under the appropriate Phase in Section 3, including components created or updated.
+2. **Architecture & Flows**: If a flow, shader, or state pattern is introduced or refactored, document it in Section 2 with data flow and mechanics.
+3. **Pivots & Rationale (What was done, what was changed, and WHY)**:
+   - Every time an implementation is modified based on testing, visual review, or user feedback, immediately append an entry to the table in **Section 4**.
+   - Must explicitly capture:
+     - Component / Area.
+     - What was initially implemented.
+     - What it was changed to.
+     - The concrete reason / user feedback driving the change.

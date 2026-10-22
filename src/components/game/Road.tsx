@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { MeshLambertMaterial, PlaneGeometry } from 'three';
+import { MeshStandardMaterial, PlaneGeometry } from 'three';
 import type { Mesh } from 'three';
 import { CHUNK_COUNT, CHUNK_LENGTH, COLORS, ROAD_HALF_WIDTH } from '../../game/constants';
 import { runtime } from '../../game/state';
@@ -25,8 +25,16 @@ export function Road() {
       roadGeo,
       groundGeo,
       texture,
-      roadMat: applyBend(new MeshLambertMaterial({ map: texture })),
-      groundMat: applyBend(new MeshLambertMaterial({ color: COLORS.sand })),
+      roadMat: applyBend(new MeshStandardMaterial({
+        map: texture,
+        roughness: 0.76,
+        metalness: 0.04,
+      })),
+      groundMat: applyBend(new MeshStandardMaterial({
+        color: COLORS.sand,
+        roughness: 0.88,
+        metalness: 0.02,
+      })),
     };
   }, []);
 

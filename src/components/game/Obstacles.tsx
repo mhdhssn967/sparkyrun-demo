@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { BoxGeometry, Color, DynamicDrawUsage, InstancedBufferAttribute, InstancedMesh, Object3D } from 'three';
 import { LANE_WIDTH, OBSTACLE_BOX_CAPACITY, SPAWN_AHEAD } from '../../game/constants';
 import { OBSTACLE_PARTS, obstacleColor } from '../../game/obstacles';
-import { runtime } from '../../game/state';
+import { getGameState, runtime } from '../../game/state';
 import { createPropMaterial } from '../../utils/bendMaterial';
 
 const tmp = new Object3D();
@@ -15,7 +15,7 @@ export function Obstacles() {
     const m = new InstancedMesh(new BoxGeometry(1, 1, 1), createPropMaterial(), OBSTACLE_BOX_CAPACITY);
     m.instanceMatrix.setUsage(DynamicDrawUsage);
     m.instanceColor = new InstancedBufferAttribute(new Float32Array(OBSTACLE_BOX_CAPACITY * 3), 3);
-    m.castShadow = true;
+    m.castShadow = false;
     m.receiveShadow = true;
     m.frustumCulled = false;
     m.count = 0;
@@ -32,6 +32,13 @@ export function Obstacles() {
   );
 
   useFrame(() => {
+    const status = getGameState().status;
+    if (status === 'home' || status === 'menu') {
+      mesh.count = 0;
+      mesh.instanceMatrix.needsUpdate = true;
+      return;
+    }
+
     let n = 0;
     for (const ob of runtime.obstacles) {
       const z = -(ob.d - runtime.distance);

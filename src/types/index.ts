@@ -1,4 +1,4 @@
-export type GameStatus = 'menu' | 'playing' | 'gameover';
+export type GameStatus = 'home' | 'menu' | 'playing' | 'gameover';
 export type Lane = -1 | 0 | 1;
 export type GameAction = 'left' | 'right' | 'jump' | 'slide';
 
@@ -47,6 +47,45 @@ export interface ChunkOutput {
   banners: BannerInstance[];
 }
 
+export interface Crystal {
+  id: number;
+  lane: Lane;
+  d: number;
+  y: number;
+  collected: boolean;
+  collectAnim: number;
+  counted?: boolean;
+  pickupX?: number;
+  pickupY?: number;
+  pickupZ?: number;
+  currentX?: number;
+  currentY?: number;
+  currentZ?: number;
+  currentScale?: number;
+  attracted?: boolean;
+  pullX?: number;
+  pullY?: number;
+  pullZ?: number;
+}
+
+export interface MagnetItem {
+  id: number;
+  lane: Lane;
+  d: number;
+  y: number;
+  collected: boolean;
+  collectAnim: number;
+}
+
+export interface PowerupItem {
+  id: number;
+  lane: Lane;
+  d: number;
+  y: number;
+  collected: boolean;
+  collectAnim: number;
+}
+
 /** Mutable per-frame simulation state (kept out of React for performance). */
 export interface RuntimeState {
   /** Total distance travelled (never reset, so the world never pops). */
@@ -66,8 +105,15 @@ export interface RuntimeState {
   sliding: boolean;
   slideTimer: number;
   slideQueued: boolean;
+  rollCount: number;
   crashed: boolean;
   fallTimer: number;
   time: number;
+  magnetTimer: number;
+  turboTimer: number;
   obstacles: Obstacle[];
+  crystals: Crystal[];
+  magnets: MagnetItem[];
+  powerups: PowerupItem[];
 }
+

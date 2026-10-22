@@ -42,7 +42,7 @@ const cyl = (o: Out, x: number, y: number, z: number, dia: number, h: number, c:
 const cone = (o: Out, x: number, y: number, z: number, dia: number, h: number, c: number) => add(o, 'cone', x, y, z, dia, h, dia, c);
 const sphere = (o: Out, x: number, y: number, z: number, w: number, h: number, d: number, c: number) => add(o, 'sphere', x, y, z, w, h, d, c);
 
-const GLASS = [0x6ba4d4, 0x80b6e0, 0x5d9ecf, 0x94c8e6, 0x72add6, 0xa2cde7];
+const GLASS = [0x228be6, 0x2b96ec, 0x1f84dd, 0x3aa2f2, 0x2791e8];
 const SAND = [COLORS.sand, COLORS.sandLight, 0xdfbe8c, 0xfae2be];
 
 /** Adds a framed billboard/banner preserving the exact aspect ratio of the underlying source image. */
