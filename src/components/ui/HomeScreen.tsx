@@ -169,6 +169,20 @@ export function HomeScreen() {
 
       {/* Center Hero Section with Logo, Play Button, Stats, and Secondary Actions */}
       <main className="home-hero">
+        {/* PET Popular Electricals Logo placed above Sparky Run logo */}
+        <div className="home-top-brand">
+          <img
+            src="/pet_logo_white.png"
+            alt="PET Popular Electricals & Trading Co. W.L.L"
+            className="home-top-pet-logo"
+            width={329}
+            height={263}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/bannerimages/image.png';
+            }}
+          />
+        </div>
+
         <h1 className="home-logo-heading">
           <img
             src="/sparky_run.webp"
@@ -212,20 +226,6 @@ export function HomeScreen() {
           <SecondaryHexButton
             variant="rewards"
             onClick={() => setActivePage('rewards')}
-          />
-        </div>
-
-        {/* Bottom PET Popular Electricals Logo */}
-        <div className="home-bottom-brand">
-          <img
-            src="/pet_logo_white.png"
-            alt="PET Popular Electricals & Trading Co. W.L.L"
-            className="home-pet-logo"
-            width={329}
-            height={263}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/bannerimages/image.png';
-            }}
           />
         </div>
       </main>

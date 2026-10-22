@@ -61,8 +61,6 @@ export function LivesLeftDisplay({
           );
         })}
       </div>
-
-     
     </div>
   );
 }

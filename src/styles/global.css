@@ -603,6 +603,35 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   gap: 18px;
 }
 
+/* PET Brand Logo above Sparky Run Logo */
+.home-top-brand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: -10px;
+  z-index: 11;
+}
+
+.home-top-pet-logo {
+  width: min(44vw, 150px);
+  max-height: 152px;
+  height: auto;
+  aspect-ratio: 329 / 263;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 18px rgba(255, 255, 255, 0.25));
+  opacity: 0.95;
+  transition: transform 0.25s ease, filter 0.25s ease, opacity 0.25s ease;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.home-top-pet-logo:hover {
+  transform: scale(1.05);
+  opacity: 1;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 24px rgba(255, 255, 255, 0.45));
+}
+
 .home-logo-heading {
   margin: 0;
   display: flex;
@@ -1951,9 +1980,10 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
     font-size: 14px;
   }
 
-  .home-pet-logo {
+  .home-pet-logo,
+  .home-top-pet-logo {
     width: 110px;
-    max-width: 32%;
+    max-width: 34%;
   }
 }
 
