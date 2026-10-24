@@ -1,16 +1,20 @@
 interface PlayButtonHexProps {
   onClick: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
-export function PlayButtonHex({ onClick, className = '' }: PlayButtonHexProps) {
+export function PlayButtonHex({ onClick, className = '', disabled = false }: PlayButtonHexProps) {
   return (
     <button
       id="play-game-button"
-      className={`hex-play-btn ${className}`}
-      onClick={onClick}
+      className={`hex-play-btn ${disabled ? 'disabled' : ''} ${className}`}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       type="button"
       aria-label="Play Game"
+      aria-disabled={disabled}
+      title={disabled ? 'Scan a valid QR code to unlock gameplay' : 'Play Game'}
     >
       <svg
         className="hex-play-svg"

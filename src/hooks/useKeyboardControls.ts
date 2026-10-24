@@ -38,6 +38,11 @@ export function useKeyboardControls() {
           setGameState({ status: 'menu' });
           return;
         }
+
+        if (currentStatus === 'gameover') {
+          return;
+        }
+
         requestFullscreen();
         restartBGM();
         startGame();

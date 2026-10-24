@@ -705,6 +705,20 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   filter: drop-shadow(0 6px 12px rgba(237, 28, 36, 0.25));
 }
 
+.hex-play-btn:disabled,
+.hex-play-btn.disabled {
+  cursor: not-allowed !important;
+  animation: none !important;
+  filter: grayscale(0.88) opacity(0.48) !important;
+  pointer-events: auto;
+}
+
+.hex-play-btn:disabled:hover,
+.hex-play-btn.disabled:hover {
+  transform: none !important;
+  filter: grayscale(0.88) opacity(0.48) !important;
+}
+
 @keyframes hexPlayPulse {
   0%, 100% {
     transform: scale(1);
@@ -1611,6 +1625,110 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   pointer-events: auto;
 }
 
+/* Top-Right: Active QR Token / Coupon Code Display */
+.home-top-token-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.home-top-token-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-top: 2.5px solid #ed1c24;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(237, 28, 36, 0.12);
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.home-top-token-badge:hover {
+  transform: translateY(-1px);
+  border-color: #ed1c24;
+  box-shadow: 0 6px 18px rgba(237, 28, 36, 0.18);
+}
+
+.home-top-token-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.home-top-token-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #ed1c24;
+}
+
+.home-top-token-empty {
+  opacity: 0.7;
+  border-top-color: #9ca3af;
+}
+
+.home-top-token-none {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  letter-spacing: 0.04em;
+}
+
+/* Legacy Top-Right Test Button styles (retained for backward compatibility) */
+.home-a3-test-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1.5px solid #e5e7eb;
+  border-top: 2.5px solid #ed1c24;
+  border-radius: 12px;
+  color: #111827;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(237, 28, 36, 0.12);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-a3-test-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.03);
+  border-color: #ed1c24;
+  color: #ed1c24;
+  box-shadow: 0 6px 18px rgba(237, 28, 36, 0.2);
+}
+
+.home-a3-test-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+.home-a3-test-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.a3-test-btn-icon {
+  font-size: 14px;
+}
+
+.a3-test-btn-text {
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 /* 3D Sparky Player Profile & Stats Badge */
 .home-player-badge {
   display: flex;
@@ -1830,14 +1948,14 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   }
 }
 
-/* 3D Hero Stats Row between Play button and Secondary buttons */
+/* 3D Hero Stats Row: Rank, Best, Total above Play button, below Logo */
 .home-hero-stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   width: 100%;
   max-width: 350px;
-  margin: 0 auto;
+  margin: -4px auto 2px;
   box-sizing: border-box;
 }
 
@@ -4832,4 +4950,544 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
     padding: 2px 6px;
   }
 }
+
+/* =============================================================
+   QR Token & Gameplay Session Lifecycle Styling
+   ============================================================= */
+.home-token-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 8px auto 0;
+  padding: 6px 14px;
+  background: #ffffff;
+  border: 1.5px solid rgba(237, 28, 36, 0.22);
+  border-radius: 20px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.home-token-status-pill:hover {
+  border-color: #ed1c24;
+  background: #fff5f5;
+  color: #ed1c24;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(237, 28, 36, 0.15);
+}
+
+.home-token-status-pill.exhausted {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #b91c1c;
+  animation: tokenPulse 2s infinite ease-in-out;
+}
+
+.home-token-status-pill.invalid {
+  background: #fff1f2;
+  border-color: #f43f5e;
+  color: #be123c;
+  animation: tokenPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes tokenPulse {
+  0%, 100% {
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.15);
+  }
+  50% {
+    box-shadow: 0 2px 18px rgba(239, 68, 68, 0.35);
+  }
+}
+
+.token-status-icon {
+  font-size: 13px;
+}
+
+.token-status-text {
+  letter-spacing: 0.2px;
+}
+
+.token-status-action {
+  font-size: 11px;
+  color: #ed1c24;
+  text-decoration: underline;
+  margin-left: 2px;
+}
+
+/* QR Token Recharge Modal */
+.qr-token-modal-card {
+  max-width: 480px !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+.token-lives-summary-box {
+  background: #f9fafb;
+  border: 1.5px solid #f3f4f6;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.token-active-badge {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.token-active-badge strong {
+  color: #111827;
+  font-family: monospace;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.token-lives-count {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.token-lives-active {
+  color: #ed1c24;
+}
+
+.token-lives-zero {
+  color: #dc2626;
+}
+
+.token-input-group {
+  margin: 18px 0 10px;
+  text-align: left;
+}
+
+.token-input-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.token-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.token-code-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: #f9fafb;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #111827;
+  letter-spacing: 1px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.token-code-input:focus {
+  border-color: #ed1c24;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(237, 28, 36, 0.12);
+}
+
+.token-apply-btn {
+  padding: 10px 18px;
+  background: #ed1c24;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(237, 28, 36, 0.25);
+}
+
+.token-apply-btn:hover:not(:disabled) {
+  background: #d6141c;
+  transform: translateY(-1px);
+}
+
+.token-apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.token-feedback-msg {
+  padding: 8px 12px;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.token-demo-shortcuts {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #f3f4f6;
+  text-align: left;
+}
+
+.token-shortcuts-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.token-shortcut-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.token-shortcut-pill {
+  padding: 6px 10px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.token-shortcut-pill:hover {
+  background: #ed1c24;
+  border-color: #ed1c24;
+  color: #ffffff;
+}
+
+/* GameOver Token Lives Status Badge */
+.gameover-lives-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(237, 28, 36, 0.12);
+  border: 1.5px solid #ed1c24;
+  border-radius: 12px;
+  padding: 8px 14px;
+  color: #ed1c24;
+  font-size: 13px;
+  font-weight: 800;
+  margin: 10px 0 14px;
+  box-shadow: 0 4px 14px rgba(237, 28, 36, 0.2);
+}
+
+.gameover-lives-badge.exhausted {
+  background: rgba(220, 38, 38, 0.14);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.btn-exhausted {
+  background: #ef4444 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.btn-exhausted:hover {
+  background: #dc2626 !important;
+}
+
+.hint-warning {
+  color: #f87171 !important;
+  font-weight: 700 !important;
+}
+
+/* =============================================================
+   Prominent "Click Here to Scan a QR Code" Button & Live Scanner
+   ============================================================= */
+.home-scan-qr-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px auto 4px;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #ed1c24 0%, #c41219 100%);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 30px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(237, 28, 36, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home-scan-qr-cta-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  background: linear-gradient(135deg, #ff2a33 0%, #d6141c 100%);
+  box-shadow: 0 8px 24px rgba(237, 28, 36, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.home-scan-qr-cta-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.home-scan-qr-cta-btn.pulse-highlight {
+  animation: scanCtaPulse 2s infinite ease-in-out;
+}
+
+@keyframes scanCtaPulse {
+  0%, 100% {
+    box-shadow: 0 4px 18px rgba(237, 28, 36, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 26px rgba(237, 28, 36, 0.65), 0 0 16px rgba(237, 28, 36, 0.4);
+    transform: scale(1.03);
+  }
+}
+
+.scan-qr-cta-icon {
+  font-size: 16px;
+}
+
+.scan-qr-cta-label {
+  text-transform: uppercase;
+}
+
+.scan-qr-cta-arrow {
+  font-size: 14px;
+  transition: transform 0.2s;
+}
+
+.home-scan-qr-cta-btn:hover .scan-qr-cta-arrow {
+  transform: translateX(3px);
+}
+
+/* ---- QR Scanner Modal ---- */
+.qr-scanner-modal-card {
+  max-width: 480px !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+.qr-scanner-body {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qr-scanner-viewfinder-frame {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  height: 280px;
+  background: #0b0c10;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25), inset 0 0 0 2px rgba(237, 28, 36, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Viewfinder Target & Laser */
+.qr-viewfinder-target {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 190px;
+  height: 190px;
+  pointer-events: none;
+}
+
+.qr-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: #ed1c24;
+  border-style: solid;
+}
+
+.qr-corner.top-left {
+  top: 0;
+  left: 0;
+  border-width: 3.5px 0 0 3.5px;
+  border-top-left-radius: 8px;
+}
+
+.qr-corner.top-right {
+  top: 0;
+  right: 0;
+  border-width: 3.5px 3.5px 0 0;
+  border-top-right-radius: 8px;
+}
+
+.qr-corner.bottom-left {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 3.5px 3.5px;
+  border-bottom-left-radius: 8px;
+}
+
+.qr-corner.bottom-right {
+  bottom: 0;
+  right: 0;
+  border-width: 0 3.5px 3.5px 0;
+  border-bottom-right-radius: 8px;
+}
+
+.qr-laser-line {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 3px;
+  background: #ed1c24;
+  box-shadow: 0 0 12px #ff2a33, 0 0 24px rgba(237, 28, 36, 0.8);
+  border-radius: 2px;
+  animation: qrLaserSweep 2.2s infinite ease-in-out;
+}
+
+@keyframes qrLaserSweep {
+  0% {
+    top: 6%;
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 94%;
+    opacity: 0.3;
+  }
+}
+
+.qr-scan-hud-pill {
+  position: absolute;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.qr-hud-pulse {
+  width: 7px;
+  height: 7px;
+  background: #ed1c24;
+  border-radius: 50%;
+  animation: hudPulse 1.4s infinite ease-in-out;
+}
+
+@keyframes hudPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 1;
+  }
+}
+
+/* Fallback state when camera permission blocked */
+.qr-camera-fallback-panel {
+  padding: 24px 20px;
+  text-align: center;
+  color: #f3f4f6;
+}
+
+.qr-fallback-icon {
+  font-size: 38px;
+  margin-bottom: 8px;
+}
+
+.qr-fallback-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: #ffffff;
+}
+
+.qr-fallback-desc {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+.qr-camera-help {
+  font-size: 11.5px;
+  color: #d1d5db;
+  line-height: 1.4;
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+/* Feedback banner */
+.qr-feedback-banner {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-top: 12px;
+  text-align: center;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.qr-feedback-banner.success {
+  background: #ecfdf5;
+  border: 1.5px solid #10b981;
+  color: #047857;
+}
+
+.qr-feedback-banner.error {
+  background: #fef2f2;
+  border: 1.5px solid #ef4444;
+  color: #b91c1c;
+}
+
+.qr-feedback-banner.info {
+  background: #eff6ff;
+  border: 1.5px solid #3b82f6;
+  color: #1d4ed8;
+}
+
 

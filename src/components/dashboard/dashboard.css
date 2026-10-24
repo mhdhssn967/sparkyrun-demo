@@ -1,0 +1,619 @@
+/* ==========================================================================
+   POPULAR ELECTRICALS (PET) - MINIMAL ADMIN DASHBOARD
+   Clean, modern, uncluttered interface with standard typography
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --pet-red: #ED1C24;
+  --pet-red-dark: #C41219;
+  --pet-red-light: #FEE2E2;
+  --pet-red-glow: rgba(237, 28, 36, 0.12);
+
+  --pet-bg: #F8FAFC;
+  --pet-surface: #FFFFFF;
+  --pet-surface-hover: #F1F5F9;
+
+  --pet-text-main: #0F172A;
+  --pet-text-muted: #475569;
+  --pet-text-light: #94A3B8;
+
+  --pet-border: #E2E8F0;
+
+  --sidebar-w: 240px;
+  --header-h: 64px;
+
+  --pet-radius-sm: 6px;
+  --pet-radius-md: 10px;
+  --pet-radius-lg: 14px;
+}
+
+/* Base Dashboard Container & Universal Typography */
+.pet-dash-container,
+.pet-dash-container * {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+.pet-dash-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--pet-bg);
+  color: var(--pet-text-main);
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* -------------------------------------------------------------
+/* -------------------------------------------------------------
+   1. SIDEBAR (Popular Red Theme with White Selection)
+   ------------------------------------------------------------- */
+.pet-sidebar {
+  width: var(--sidebar-w);
+  background: var(--pet-red);
+  border-right: 1px solid #D9161D;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  transition: transform 0.2s ease;
+  box-shadow: 2px 0 12px rgba(237, 28, 36, 0.08);
+}
+
+.pet-sidebar-header {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  min-height: var(--header-h);
+  box-sizing: border-box;
+}
+
+.pet-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.pet-brand-logo-img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.pet-brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.pet-brand-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.01em;
+}
+
+.pet-brand-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 500;
+}
+
+/* Sidebar Navigation Items */
+.pet-sidebar-nav {
+  flex: 1;
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pet-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--pet-radius-md);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.pet-nav-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+
+.pet-nav-item.active {
+  background: #FFFFFF;
+  color: var(--pet-red);
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pet-nav-icon {
+  font-size: 16px;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+
+.pet-nav-item.active .pet-nav-icon {
+  color: var(--pet-red);
+}
+
+/* -------------------------------------------------------------
+   2. MAIN CONTENT AREA & TOPBAR
+   ------------------------------------------------------------- */
+.pet-main-wrapper {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: calc(100vw - var(--sidebar-w));
+}
+
+.pet-topbar {
+  height: var(--header-h);
+  background: var(--pet-surface);
+  border-bottom: 1px solid var(--pet-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.pet-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pet-mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--pet-border);
+  border-radius: var(--pet-radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.pet-topbar-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--pet-text-main);
+  margin: 0;
+}
+
+.pet-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pet-btn-launch-game {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--pet-red);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--pet-radius-sm);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-family: inherit;
+}
+
+.pet-btn-launch-game:hover {
+  opacity: 0.9;
+}
+
+.pet-content {
+  flex: 1;
+  padding: 28px;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* -------------------------------------------------------------
+   3. MINIMAL KPI METRIC CARDS
+   ------------------------------------------------------------- */
+.pet-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.pet-kpi-card {
+  background: var(--pet-surface);
+  border: 1px solid var(--pet-border);
+  border-radius: var(--pet-radius-md);
+  padding: 18px;
+}
+
+.pet-kpi-label {
+  font-size: 13px;
+  color: var(--pet-text-muted);
+  margin-bottom: 6px;
+}
+
+.pet-kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--pet-text-main);
+  line-height: 1.1;
+  margin-bottom: 4px;
+}
+
+/* -------------------------------------------------------------
+   4. DATA TABLES (CLEAN & MINIMAL)
+   ------------------------------------------------------------- */
+.pet-panel-card {
+  background: var(--pet-surface);
+  border: 1px solid var(--pet-border);
+  border-radius: var(--pet-radius-md);
+  padding: 20px;
+}
+
+.pet-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.pet-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--pet-text-main);
+}
+
+.pet-table-container {
+  overflow-x: auto;
+  border-radius: var(--pet-radius-sm);
+  border: 1px solid var(--pet-border);
+  background: var(--pet-surface);
+}
+
+.pet-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.pet-table th {
+  background: #F8FAFC;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: var(--pet-text-muted);
+  font-size: 12px;
+  border-bottom: 1px solid var(--pet-border);
+}
+
+.pet-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--pet-border);
+  color: var(--pet-text-main);
+}
+
+.pet-table tr:last-child td {
+  border-bottom: none;
+}
+
+.pet-table tr:hover td {
+  background: #F8FAFC;
+}
+
+.pet-badge.verified {
+  background: #FEE2E2;
+  color: #ED1C24;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.pet-btn-action {
+  background: transparent;
+  border: 1px solid var(--pet-border);
+  color: var(--pet-text-muted);
+  border-radius: var(--pet-radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.pet-btn-action:hover {
+  border-color: var(--pet-red);
+  color: var(--pet-red);
+}
+
+.pet-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--pet-border);
+  border-radius: var(--pet-radius-sm);
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.pet-search-input:focus {
+  border-color: var(--pet-red);
+}
+
+/* Progress Bars */
+.pet-bar-track {
+  height: 8px;
+  background: #E2E8F0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pet-bar-fill {
+  height: 100%;
+  background: var(--pet-red);
+}
+
+.pet-bar-fill.barwa {
+  background: #F59E0B;
+}
+
+/* -------------------------------------------------------------
+   5. MOBILE RESPONSIVENESS
+   ------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .pet-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .pet-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .pet-main-wrapper {
+    margin-left: 0;
+    max-width: 100vw;
+  }
+
+  .pet-mobile-menu-btn {
+    display: block;
+  }
+
+  .pet-content {
+    padding: 16px;
+  }
+
+  .pet-topbar {
+    padding: 0 16px;
+  }
+}
+
+/* Modal & Slideover for Brand Sessions Audit */
+.pet-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.pet-modal-card {
+  background: var(--pet-surface);
+  border-radius: var(--pet-radius-lg);
+  border: 1px solid var(--pet-border);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: petFadeIn 0.15s ease-out;
+}
+
+@keyframes petFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.pet-modal-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--pet-border);
+}
+
+.pet-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.pet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #F1F5F9;
+  border-radius: var(--pet-radius-sm);
+  font-size: 12px;
+  color: var(--pet-text-muted);
+}
+
+.pet-chip-val {
+  font-weight: 700;
+  color: var(--pet-text-main);
+}
+
+.pet-chip-val.red {
+  color: var(--pet-red);
+}
+
+/* Date Grouped Sessions Cards */
+.pet-date-group {
+  margin-bottom: 20px;
+}
+
+.pet-date-group:last-child {
+  margin-bottom: 0;
+}
+
+.pet-date-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pet-date-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pet-red);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.pet-date-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94A3B8;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.pet-game-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pet-game-card-horizontal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #FFFFFF;
+  border: 1px solid var(--pet-border);
+  border-radius: var(--pet-radius-md);
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.pet-game-card-horizontal:hover {
+  border-color: #CBD5E1;
+  background: #F8FAFC;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
+}
+
+.pet-game-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pet-game-card-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #F1F5F9;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.pet-game-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.pet-game-card-time {
+  font-size: 12px;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.pet-game-card-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.pet-game-stat {
+  text-align: right;
+}
+
+.pet-game-stat-label {
+  font-size: 10px;
+  color: #94A3B8;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.pet-game-stat-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 1px;
+}
+
+.pet-game-stat-val.score {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--pet-red);
+}
+
+

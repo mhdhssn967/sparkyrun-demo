@@ -1,20 +1,28 @@
 import type {
+  BrandPlayer,
+  BrandPlayerSession,
   BrandReward,
   ClaimedVoucher,
   CustomerProfile,
   DailyDateWinnersGroup,
   LeaderboardEntry,
   LiveClaimEvent,
+  QrToken,
+  StartSessionResponse,
+  EndSessionResponse,
+  TokenVerificationResult,
   WeeklyWinnersGroup,
 } from '../types/customer';
 
 const STORAGE_KEY_CUSTOMER = 'popular_customer_profile';
 const STORAGE_KEY_VOUCHERS = 'popular_claimed_vouchers';
 const STORAGE_KEY_LOCAL_RUNS = 'popular_local_runs';
+const STORAGE_KEY_ACTIVE_TOKEN = 'popular_active_token';
+const STORAGE_KEY_ACTIVE_SESSION = 'popular_active_session';
+const STORAGE_KEY_TOKENS = 'popular_tokens';
 
-const API_BASE_URL =
-  (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
-  '/api';
+import { API_BASE_URL } from '../config/api';
+import { checkMobileNumber, registerPlayer, getSavedPlayer } from './authService';
 
 /** Helper to mask a phone number for privacy: "+974 55123456" -> "+974 55***456" */
 export function maskPhoneNumber(fullPhone: string): string {
@@ -280,8 +288,30 @@ class PopularApiService {
   getCustomerProfile(): CustomerProfile | null {
     try {
       const data = localStorage.getItem(STORAGE_KEY_CUSTOMER);
-      if (!data) return null;
-      return JSON.parse(data) as CustomerProfile;
+      if (data) return JSON.parse(data) as CustomerProfile;
+
+      // Fallback: check saved player session from Better Auth
+      const savedPlayer = getSavedPlayer();
+      if (savedPlayer) {
+        const profile: CustomerProfile = {
+          id: savedPlayer.id,
+          name: savedPlayer.name,
+          countryCode: '+974',
+          phone: savedPlayer.phone,
+          fullPhone: `+974 ${savedPlayer.phone}`,
+          consent: true,
+          registeredAt: savedPlayer.createdAt || new Date().toISOString(),
+          bestScore: 0,
+          totalCoins: 0,
+        };
+        try {
+          localStorage.setItem(STORAGE_KEY_CUSTOMER, JSON.stringify(profile));
+        } catch {
+          /* ignore */
+        }
+        return profile;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -296,24 +326,31 @@ class PopularApiService {
     const cleanPhone = phone.trim().replace(/\D/g, '');
     const fullPhone = `${countryCode} ${cleanPhone}`;
 
-    // 1. Attempt Express backend lookup on DigitalOcean droplet
+    // 1. Attempt GameFaktory Backend login check via Better Auth
     try {
-      const res = await fetch(
-        `${API_BASE_URL}/customer/lookup?phone=${encodeURIComponent(fullPhone)}&clean=${cleanPhone}`,
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.name) {
-          try {
-            localStorage.setItem(STORAGE_KEY_CUSTOMER, JSON.stringify(data));
-          } catch {
-            /* ignore */
-          }
-          return data as CustomerProfile;
+      const authRes = await checkMobileNumber(cleanPhone);
+      if (authRes.success && authRes.exists && authRes.user) {
+        const profile: CustomerProfile = {
+          id: authRes.user.id,
+          name: authRes.user.name,
+          countryCode,
+          phone: cleanPhone,
+          fullPhone,
+          consent: true,
+          registeredAt: authRes.user.createdAt || new Date().toISOString(),
+          bestScore: 0,
+          totalCoins: 0,
+        };
+        try {
+          localStorage.setItem(STORAGE_KEY_CUSTOMER, JSON.stringify(profile));
+          localStorage.setItem('gf_player_session', JSON.stringify(authRes.user));
+        } catch {
+          /* ignore */
         }
+        return profile;
       }
     } catch {
-      /* offline / droplet fallback */
+      /* offline / network fallback below */
     }
 
     // 2. Check local active profile
@@ -353,14 +390,29 @@ class PopularApiService {
   }): Promise<CustomerProfile> {
     const cleanPhone = params.phone.trim().replace(/\D/g, '');
     const fullPhone = `${params.countryCode} ${cleanPhone}`;
+
+    let backendUserId = `pop_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    let createdAt = new Date().toISOString();
+
+    // 1. Register with PostgreSQL backend via Better Auth User schema
+    try {
+      const regRes = await registerPlayer(cleanPhone, params.name);
+      if (regRes.success && regRes.user) {
+        backendUserId = regRes.user.id;
+        if (regRes.user.createdAt) createdAt = regRes.user.createdAt;
+      }
+    } catch {
+      // Offline / fallback continues smoothly
+    }
+
     const profile: CustomerProfile = {
-      id: `pop_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: backendUserId,
       name: params.name.trim(),
       countryCode: params.countryCode,
       phone: cleanPhone,
       fullPhone,
       consent: params.consent,
-      registeredAt: new Date().toISOString(),
+      registeredAt: createdAt,
       bestScore: 0,
       totalCoins: 0,
     };
@@ -378,17 +430,6 @@ class PopularApiService {
       /* ignore storage error */
     }
 
-    // Attempt Express Backend Sync (fire & forget with graceful fallback)
-    try {
-      await fetch(`${API_BASE_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
-      });
-    } catch {
-      // Backend not yet deployed on droplet; continues smoothly on client
-    }
-
     return profile;
   }
 
@@ -404,6 +445,7 @@ class PopularApiService {
     // Update customer lifetime records
     if (profile) {
       profile.bestScore = Math.max(profile.bestScore, score);
+      profile.totalScore = (profile.totalScore || 0) + score;
       profile.totalCoins += coins;
       try {
         localStorage.setItem(STORAGE_KEY_CUSTOMER, JSON.stringify(profile));
@@ -438,7 +480,7 @@ class PopularApiService {
 
     // Attempt backend POST
     try {
-      await fetch(`${API_BASE_URL}/scores`, {
+      await fetch(`${API_BASE_URL}/api/scores`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -472,7 +514,7 @@ class PopularApiService {
 
     // Try Express backend first
     try {
-      const res = await fetch(`${API_BASE_URL}/leaderboard/today?date=${today}`);
+      const res = await fetch(`${API_BASE_URL}/api/leaderboard/today?date=${today}`);
       if (res.ok) {
         const json = await res.json();
         if (Array.isArray(json) && json.length > 0) return json;
@@ -521,7 +563,7 @@ class PopularApiService {
 
     // Try Express backend
     try {
-      const res = await fetch(`${API_BASE_URL}/leaderboard/global`);
+      const res = await fetch(`${API_BASE_URL}/api/leaderboard/global`);
       if (res.ok) {
         const json = await res.json();
         if (Array.isArray(json) && json.length > 0) return json;
@@ -624,7 +666,7 @@ class PopularApiService {
 
     // Backend sync attempt
     try {
-      await fetch(`${API_BASE_URL}/rewards/claim`, {
+      await fetch(`${API_BASE_URL}/api/rewards/claim`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(voucher),
@@ -639,7 +681,7 @@ class PopularApiService {
   // 5. Live Feed of Community Claims
   async getLiveClaimsFeed(): Promise<LiveClaimEvent[]> {
     try {
-      const res = await fetch(`${API_BASE_URL}/rewards/feed`);
+      const res = await fetch(`${API_BASE_URL}/api/rewards/feed`);
       if (res.ok) {
         const json = await res.json();
         if (Array.isArray(json) && json.length > 0) return json;
@@ -716,6 +758,528 @@ class PopularApiService {
       dateLabel: w.weekLabel,
       winners: [{ rank: 1, name: w.winner.name, prize: w.winner.prize }],
     }));
+  }
+
+  // =============================================================
+  // 7. QR Token & Gameplay Session Lifecycle
+  // =============================================================
+
+  /**
+   * Reads ?token= or ?t= from the current window URL (e.g. sparkyrun.gamefaktory.com/?token=122ERF).
+   * Stores it as active token, strips it cleanly from the address bar, and returns the token string.
+   */
+  extractTokenFromUrl(): string | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token') || urlParams.get('t');
+      if (token && token.trim().length > 0) {
+        const cleanToken = token.trim().toUpperCase();
+        this.setActiveToken(cleanToken);
+
+        // Clean query parameter from browser address bar without reload
+        const url = new URL(window.location.href);
+        url.searchParams.delete('token');
+        url.searchParams.delete('t');
+        const cleanUrl = url.pathname + (url.search ? url.search : '') + url.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+        return cleanToken;
+      }
+    } catch {
+      /* ignore URL parsing failure */
+    }
+
+    return this.getActiveToken();
+  }
+
+  /**
+   * Gets the currently active QR token code, or null if no token is scanned.
+   */
+  getActiveToken(): string | null {
+    try {
+      const stored =
+        sessionStorage.getItem(STORAGE_KEY_ACTIVE_TOKEN) ||
+        localStorage.getItem(STORAGE_KEY_ACTIVE_TOKEN);
+      if (stored && stored.trim().length > 0) {
+        return stored.trim().toUpperCase();
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
+
+  /**
+   * Clears the active QR token from storage.
+   */
+  clearActiveToken(): void {
+    try {
+      sessionStorage.removeItem(STORAGE_KEY_ACTIVE_TOKEN);
+      localStorage.removeItem(STORAGE_KEY_ACTIVE_TOKEN);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Pre-seeded authorized showroom tokens (matching backend PostgreSQL seeds)
+  readonly SEED_AUTHORIZED_TOKENS: Record<string, { initialLives: number; label: string }> = {
+    '122ERF': { initialLives: 3, label: 'Official Showroom QR' },
+    'PET-9XK2-MP8A': { initialLives: 3, label: 'Najma Showroom Flyer' },
+    'PET-BARWA-01': { initialLives: 3, label: 'Barwa Village Counter' },
+    'PET-NAJMA-02': { initialLives: 3, label: 'Najma Counter QR' },
+    'PET-VIP-2026': { initialLives: 3, label: 'VIP Customer Pass' },
+    'PET-DEMO-VIP3': { initialLives: 3, label: 'Showroom Trial Pass' },
+  };
+
+  /**
+   * Sets the active QR token in session and local storage.
+   */
+  setActiveToken(tokenCode: string): void {
+    const clean = tokenCode.trim().toUpperCase();
+    try {
+      sessionStorage.setItem(STORAGE_KEY_ACTIVE_TOKEN, clean);
+      localStorage.setItem(STORAGE_KEY_ACTIVE_TOKEN, clean);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * Retrieves a local token record only if it exists in the database registry.
+   * Returns null if token is unknown/unrecognized.
+   */
+  private getLocalToken(tokenCode: string): QrToken | null {
+    const clean = tokenCode.trim().toUpperCase();
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_TOKENS);
+      const tokens: Record<string, QrToken> = raw ? JSON.parse(raw) : {};
+      if (tokens[clean]) {
+        return tokens[clean];
+      }
+
+      // Check if it's an authorized seed token in the database catalogue
+      const seed = this.SEED_AUTHORIZED_TOKENS[clean];
+      if (seed) {
+        const newToken: QrToken = {
+          tokenCode: clean,
+          initialLives: seed.initialLives,
+          livesRemaining: seed.initialLives,
+          status: 'ACTIVE',
+          createdAt: new Date().toISOString(),
+        };
+        tokens[clean] = newToken;
+        localStorage.setItem(STORAGE_KEY_TOKENS, JSON.stringify(tokens));
+        return newToken;
+      }
+
+      // Not recognized in database!
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Verifies the token against the PostgreSQL backend API or database registry.
+   * Unrecognized/fake tokens return { valid: false, livesRemaining: 0 }.
+   */
+  async verifyToken(tokenCode?: string | null): Promise<TokenVerificationResult> {
+    const active = tokenCode || this.getActiveToken();
+    if (!active) {
+      return {
+        valid: false,
+        livesRemaining: 0,
+        message: 'No QR token scanned. Please scan a showroom QR code to play.',
+      };
+    }
+    const code = active.trim().toUpperCase();
+
+    // 1. Backend network check attempt (real PostgreSQL database check)
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/token/verify?token=${encodeURIComponent(code)}&brand=popular`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const tokenObj: QrToken = {
+          tokenCode: data.token || code,
+          initialLives: typeof data.initialLives === 'number' ? data.initialLives : 3,
+          livesRemaining: typeof data.livesRemaining === 'number' ? data.livesRemaining : 0,
+          status: data.status || (data.livesRemaining > 0 ? 'ACTIVE' : 'EXHAUSTED'),
+          createdAt: new Date().toISOString(),
+        };
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_TOKENS);
+          const tokens: Record<string, QrToken> = raw ? JSON.parse(raw) : {};
+          tokens[code] = tokenObj;
+          localStorage.setItem(STORAGE_KEY_TOKENS, JSON.stringify(tokens));
+        } catch {
+          /* ignore */
+        }
+        return {
+          valid: Boolean(data.valid),
+          token: tokenObj,
+          livesRemaining: typeof data.livesRemaining === 'number' ? data.livesRemaining : 0,
+          message: data.message || (data.valid ? 'Token verified' : 'All 3 lives exhausted for this QR token'),
+        };
+      }
+      if (res.status === 404) {
+        const localSeed = this.SEED_AUTHORIZED_TOKENS[code];
+        if (!localSeed) {
+          const errData = await res.json().catch(() => null);
+          return {
+            valid: false,
+            livesRemaining: 0,
+            message:
+              errData?.error ||
+              'Token not recognized in database. Please scan an authentic showroom QR code.',
+          };
+        }
+      } else if (res.status === 403) {
+        const errData = await res.json().catch(() => null);
+        return {
+          valid: false,
+          livesRemaining: 0,
+          message:
+            errData?.error ||
+            'This token does not belong to Popular Electricals.',
+        };
+      }
+    } catch {
+      /* fallback to local database registry below */
+    }
+
+    // 2. Local database check
+    const localToken = this.getLocalToken(code);
+    if (!localToken) {
+      return {
+        valid: false,
+        livesRemaining: 0,
+        message: 'Invalid QR Token. Not found in Popular Electricals database.',
+      };
+    }
+
+    return {
+      valid: localToken.status !== 'REVOKED',
+      token: localToken,
+      livesRemaining: localToken.livesRemaining,
+      message:
+        localToken.livesRemaining > 0
+          ? 'Token verified'
+          : 'All 3 lives exhausted for this QR token',
+    };
+  }
+
+  /**
+   * Retrieves remaining lives for the given token (defaults to active token).
+   */
+  async getTokenLives(tokenCode?: string): Promise<number> {
+    const res = await this.verifyToken(tokenCode);
+    return res.livesRemaining;
+  }
+
+  /**
+   * Starts a new game session:
+   * 1. Checks that token has lives_remaining > 0
+   * 2. Decrements 1 life in the database
+   * 3. Issues a unique sessionId and records start timestamp
+   */
+  async startGameSession(tokenCode?: string): Promise<StartSessionResponse> {
+    const active = tokenCode || this.getActiveToken();
+    if (!active) {
+      return {
+        success: false,
+        livesRemaining: 0,
+        error: 'No QR token found. Please scan a QR code to play.',
+      };
+    }
+    const code = active.trim().toUpperCase();
+    const customer = this.getCustomerProfile();
+    const customerId = customer?.id || 'guest_' + Date.now();
+    const userId = customer?.id;
+    const phone = customer?.phone;
+
+    // Attempt backend start-session
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/game/start-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: code,
+          tokenCode: code,
+          brand: 'popular',
+          brandSlug: 'popular',
+          gameSlug: 'sparky-run',
+          customerId,
+          userId,
+          phone,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.sessionId) {
+          this.setActiveSession({
+            sessionId: data.sessionId,
+            tokenCode: code,
+            startedAt: Date.now(),
+          });
+          // Synchronize cached token lives immediately
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY_TOKENS);
+            const tokens: Record<string, QrToken> = raw ? JSON.parse(raw) : {};
+            if (tokens[code]) {
+              tokens[code].livesRemaining = data.livesRemaining;
+              if (data.livesRemaining <= 0) tokens[code].status = 'EXHAUSTED';
+            } else {
+              tokens[code] = {
+                tokenCode: code,
+                initialLives: typeof data.initialLives === 'number' ? data.initialLives : 3,
+                livesRemaining: data.livesRemaining,
+                status: data.livesRemaining <= 0 ? 'EXHAUSTED' : 'ACTIVE',
+                createdAt: new Date().toISOString(),
+              };
+            }
+            localStorage.setItem(STORAGE_KEY_TOKENS, JSON.stringify(tokens));
+          } catch {
+            /* ignore */
+          }
+          return {
+            success: true,
+            sessionId: data.sessionId,
+            livesRemaining: data.livesRemaining,
+          };
+        }
+      } else if (res.status === 400 || res.status === 403 || res.status === 404) {
+        const errData = await res.json().catch(() => null);
+        return {
+          success: false,
+          livesRemaining: typeof errData?.livesRemaining === 'number' ? errData.livesRemaining : 0,
+          error: errData?.error || 'No lives remaining for this QR token.',
+        };
+      }
+    } catch {
+      /* fallback to local transaction below */
+    }
+
+    // Local database check fallback
+    const localToken = this.getLocalToken(code);
+    if (!localToken) {
+      return {
+        success: false,
+        livesRemaining: 0,
+        error: 'Invalid QR Token. Token not recognized in Popular Electricals database.',
+      };
+    }
+
+    if (localToken.livesRemaining <= 0) {
+      return {
+        success: false,
+        livesRemaining: 0,
+        error: 'No lives remaining for this token. Scan a new QR code to play!',
+      };
+    }
+
+    // Decrement 1 life
+    localToken.livesRemaining = Math.max(0, localToken.livesRemaining - 1);
+    if (localToken.livesRemaining === 0) {
+      localToken.status = 'EXHAUSTED';
+    }
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_TOKENS);
+      const tokens: Record<string, QrToken> = raw ? JSON.parse(raw) : {};
+      tokens[code] = localToken;
+      localStorage.setItem(STORAGE_KEY_TOKENS, JSON.stringify(tokens));
+    } catch {
+      /* ignore */
+    }
+
+    const sessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    this.setActiveSession({
+      sessionId,
+      tokenCode: code,
+      startedAt: Date.now(),
+    });
+
+    return {
+      success: true,
+      sessionId,
+      livesRemaining: localToken.livesRemaining,
+    };
+  }
+
+  /**
+   * Stores active in-progress game session in sessionStorage.
+   */
+  private setActiveSession(session: { sessionId: string; tokenCode: string; startedAt: number }): void {
+    try {
+      sessionStorage.setItem(STORAGE_KEY_ACTIVE_SESSION, JSON.stringify(session));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * Retrieves active in-progress session if any.
+   */
+  getActiveSession(): { sessionId: string; tokenCode: string; startedAt: number } | null {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY_ACTIVE_SESSION);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Clears the active session after completion.
+   */
+  clearActiveSession(): void {
+    try {
+      sessionStorage.removeItem(STORAGE_KEY_ACTIVE_SESSION);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * Ends a game session:
+   * 1. Validates session ID and anti-cheat constraints (max 25 coins / second)
+   * 2. Updates customer lifetime high score (best_score), cumulative total_score, and total_coins
+   * 3. Syncs with backend and leaderboard
+   */
+  async endGameSession(
+    sessionId: string,
+    score: number,
+    coins: number,
+    durationSeconds: number,
+  ): Promise<EndSessionResponse> {
+    const active = this.getActiveSession();
+    const tokenCode = active?.tokenCode || this.getActiveToken() || '';
+    const customer = this.getCustomerProfile();
+    const customerId = customer?.id || 'guest';
+    const userId = customer?.id;
+    const phone = customer?.phone;
+
+    // Anti-cheat plausibility verification: max 25 coins per second (with buffer for super coin)
+    const maxPlausibleCoins = Math.max(25, Math.ceil(durationSeconds * 25));
+    const isPlausible = coins <= maxPlausibleCoins;
+    const verifiedCoins = isPlausible ? coins : maxPlausibleCoins;
+
+    // Backend network end-session attempt
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/game/end-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          sessionToken: sessionId,
+          token: tokenCode,
+          tokenCode,
+          brand: 'popular',
+          brandSlug: 'popular',
+          gameSlug: 'sparky-run',
+          customerId,
+          userId,
+          phone,
+          score,
+          coins: verifiedCoins,
+          durationSeconds,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        this.clearActiveSession();
+        return {
+          success: true,
+          isNewHighScore: data.isNewHighScore,
+          bestScore: data.bestScore,
+          totalScore: data.totalScore,
+          totalCoins: data.totalCoins,
+          livesRemaining: data.livesRemaining,
+          rankToday: data.rankToday,
+          rankGlobal: data.rankGlobal,
+        };
+      }
+    } catch {
+      /* fallback below */
+    }
+
+    // Local database update
+    const previousBest = customer?.bestScore || 0;
+    const isNewHighScore = score > previousBest;
+
+    if (customer) {
+      customer.bestScore = Math.max(previousBest, score);
+      customer.totalScore = (customer.totalScore || 0) + score;
+      customer.totalCoins = (customer.totalCoins || 0) + verifiedCoins;
+      try {
+        localStorage.setItem(STORAGE_KEY_CUSTOMER, JSON.stringify(customer));
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // Submit to leaderboard registry
+    const ranking = await this.submitScore(score, verifiedCoins);
+
+    // Get current remaining lives
+    const localToken = tokenCode ? this.getLocalToken(tokenCode) : null;
+    this.clearActiveSession();
+
+    return {
+      success: true,
+      isNewHighScore,
+      bestScore: customer ? customer.bestScore : score,
+      totalScore: customer ? customer.totalScore : score,
+      totalCoins: customer ? customer.totalCoins : verifiedCoins,
+      livesRemaining: localToken ? localToken.livesRemaining : 0,
+      rankToday: ranking.rankToday,
+      rankGlobal: ranking.rankGlobal,
+    };
+  }
+
+  /**
+   * Fetches all registered players under a brand (default: 'popular') from PostgreSQL.
+   */
+  async getBrandPlayers(brandSlug = 'popular'): Promise<BrandPlayer[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/brands/${brandSlug}/players`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.players)) {
+          return data.players;
+        }
+      }
+    } catch {
+      /* fallback below */
+    }
+    return [];
+  }
+
+  /**
+   * Fetches all game sessions played by a specific user strictly under that brand.
+   */
+  async getPlayerBrandSessions(
+    userId: string,
+    brandSlug = 'popular'
+  ): Promise<{ player: any; sessions: BrandPlayerSession[] } | null> {
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/brands/${brandSlug}/players/${encodeURIComponent(userId)}/sessions`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          return {
+            player: data.player,
+            sessions: data.sessions || [],
+          };
+        }
+      }
+    } catch {
+      /* fallback below */
+    }
+    return null;
   }
 }
 

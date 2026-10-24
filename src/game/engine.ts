@@ -497,8 +497,8 @@ export function stepFrame(dt: number) {
       runtime.fallTimer -= dt;
       if (runtime.fallTimer <= 0) {
         stopBGM();
-        const { score, best } = getGameState();
-        setGameState({ status: 'gameover', best: Math.max(score, best) });
+        const { coins, best } = getGameState();
+        setGameState({ status: 'gameover', best: Math.max(coins, best) });
       }
     } else {
       updatePlaying(dt);

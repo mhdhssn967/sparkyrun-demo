@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SUPPORTED_COUNTRIES } from '../../types/customer';
 import type { CustomerProfile } from '../../types/customer';
 import { popularApi } from '../../services/popularApi';
+import { getSavedPlayer } from '../../services/authService';
 
 interface CustomerRegistrationModalProps {
   onRegistered: (profile: CustomerProfile) => void;
@@ -29,6 +30,16 @@ export function CustomerRegistrationModal({
   const [consent, setConsent] = useState(initialProfile?.consent ?? false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check saved player session on mount
+  useEffect(() => {
+    const saved = getSavedPlayer();
+    if (saved && !initialProfile) {
+      if (saved.phone) setPhone(saved.phone);
+      if (saved.name) setName(saved.name);
+      setConsent(true);
+    }
+  }, [initialProfile]);
 
   const cleanPhone = phone.replace(/\D/g, '');
   const isPhoneValid = cleanPhone.length === selectedCountry.digits;

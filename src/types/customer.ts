@@ -15,7 +15,77 @@ export interface CustomerProfile {
   consent: boolean;
   registeredAt: string;
   bestScore: number;
+  totalScore?: number; // Lifetime cumulative score across all runs
   totalCoins: number;
+}
+
+export interface QrToken {
+  tokenCode: string; // e.g. "PET-9xK2-mP8A" or "122ERF"
+  customerId?: string;
+  initialLives: number;
+  livesRemaining: number;
+  status: 'ACTIVE' | 'EXHAUSTED' | 'REVOKED';
+  createdAt: string;
+  expiresAt?: string;
+}
+
+export interface GameSession {
+  sessionId: string;
+  tokenCode: string;
+  customerId: string;
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'ABANDONED' | 'FLAGGED';
+  score: number;
+  coins: number;
+  durationSeconds: number;
+  startedAt: string;
+  endedAt?: string;
+}
+
+export interface BrandPlayerSession {
+  id: string;
+  sessionToken: string;
+  score: number;
+  duration: number;
+  startedAt: string;
+  completedAt: string;
+}
+
+export interface BrandPlayer {
+  id: string;
+  name: string;
+  phone: string;
+  fullPhone: string;
+  showroom: string;
+  bestScore: number;
+  totalScore: number;
+  gamesPlayed: number;
+  lastPlayed?: string;
+}
+
+export interface TokenVerificationResult {
+  valid: boolean;
+  token?: QrToken;
+  livesRemaining: number;
+  message?: string;
+}
+
+export interface StartSessionResponse {
+  success: boolean;
+  sessionId?: string;
+  livesRemaining: number;
+  error?: string;
+}
+
+export interface EndSessionResponse {
+  success: boolean;
+  isNewHighScore?: boolean;
+  bestScore?: number;
+  totalScore?: number;
+  totalCoins?: number;
+  livesRemaining?: number;
+  rankToday?: number;
+  rankGlobal?: number;
+  error?: string;
 }
 
 export interface LeaderboardEntry {

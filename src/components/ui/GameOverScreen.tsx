@@ -4,101 +4,133 @@ import { setGameState, useGameState } from '../../game/state';
 import { requestFullscreen } from '../../utils/fullscreen';
 import { restartBGM, stopBGM } from '../../game/audio';
 import { popularApi } from '../../services/popularApi';
-import { LeaderboardPage } from './LeaderboardModal';
-import { RewardsPage } from './RewardsModal';
+import type { EndSessionResponse } from '../../types/customer';
+import { LivesLeftDisplay } from './LivesLeftDisplay';
 
 export function GameOverScreen() {
-  const score = useGameState((s) => s.score);
   const coins = useGameState((s) => s.coins);
   const best = useGameState((s) => s.best);
-  const isBest = score > 0 && score >= best;
+  const isBest = coins > 0 && coins >= best;
 
-  const [ranking, setRanking] = useState<{ rankToday: number; rankGlobal: number } | null>(null);
-  const [activePage, setActivePage] = useState<'leaderboard' | 'rewards' | null>(null);
+  const [sessionResult, setSessionResult] = useState<EndSessionResponse | null>(null);
+  const [isStartingNext, setIsStartingNext] = useState<boolean>(false);
 
   useEffect(() => {
     stopBGM();
-    // Submit finalized score to Popular Electricals API
-    if (score > 0) {
-      popularApi.submitScore(score, coins).then((res) => {
-        setRanking(res);
+    let isMounted = true;
+
+    const activeSession = popularApi.getActiveSession();
+    const sessionId = activeSession?.sessionId || `sess_${Date.now()}`;
+    const startTime = activeSession?.startedAt || Date.now() - 12000;
+    const durationSeconds = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+
+    // Submit session completion with coins collected as authoritative score
+    popularApi
+      .endGameSession(sessionId, coins, coins, durationSeconds)
+      .then((res) => {
+        if (isMounted) {
+          setSessionResult(res);
+        }
+      })
+      .catch(() => {
+        // Fallback to legacy submission if network failure
+        popularApi.submitScore(coins, coins).then((legacyRes) => {
+          if (isMounted) {
+            setSessionResult({
+              success: true,
+              bestScore: Math.max(best, coins),
+              totalScore: (best || 0) + coins,
+              livesRemaining: 0,
+              rankToday: legacyRes.rankToday,
+              rankGlobal: legacyRes.rankGlobal,
+            });
+          }
+        });
       });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [coins, best]);
+
+  const livesLeft =
+    typeof sessionResult?.livesRemaining === 'number' ? sessionResult.livesRemaining : 0;
+  const isNewRecord = sessionResult?.isNewHighScore || isBest;
+
+  const handleRunAgain = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.blur();
+    if (livesLeft <= 0) {
+      resetRunSession();
+      setGameState({ status: 'home' });
+      return;
     }
-  }, [score, coins]);
 
-  if (activePage === 'leaderboard') {
-    return <LeaderboardPage onBack={() => setActivePage(null)} />;
-  }
+    setIsStartingNext(true);
+    const startRes = await popularApi.startGameSession();
+    if (!startRes.success) {
+      setIsStartingNext(false);
+      resetRunSession();
+      setGameState({ status: 'home' });
+      return;
+    }
 
-  if (activePage === 'rewards') {
-    return <RewardsPage onBack={() => setActivePage(null)} />;
-  }
+    requestFullscreen();
+    restartBGM();
+    startGame();
+  };
 
   return (
     <div className="overlay">
       <div className="panel gameover-panel">
-        <div className="eyebrow">{isBest ? '🎉 New Record!' : 'Run Finished!'}</div>
+        <div className="eyebrow">{isNewRecord ? '🎉 NEW RECORD!' : 'Run Finished!'}</div>
+
+        {/* Primary Coins Display */}
         <div className="big-score">
-          {score}
-          <span className="hud-unit">m</span>
-        </div>
-        <p className="subtitle">
-          Best: <strong>{best}m</strong> • Coins: <strong>🪙 {coins}</strong>
-        </p>
-
-        {/* Live Today Rank feedback banner */}
-        {ranking && (
-          <div className="gameover-rank-banner">
-            <span className="rank-trophy">⚡</span>
-            <span>
-              Today's Board Rank: <strong>#{ranking.rankToday}</strong> in Qatar!
-            </span>
-          </div>
-        )}
-
-        {/* Quick Campaign Nav Buttons */}
-        <div className="gameover-secondary-actions">
-          <button
-            type="button"
-            className="gameover-quick-btn"
-            onClick={() => setActivePage('leaderboard')}
-          >
-            🏆 Leaderboard
-          </button>
-          <button
-            type="button"
-            className="gameover-quick-btn"
-            onClick={() => setActivePage('rewards')}
-          >
-            🎁 Claim Rewards
-          </button>
+          {coins}
+          <span className="hud-unit" style={{ fontSize: '26px', marginLeft: '8px' }}>
+            🪙
+          </span>
         </div>
 
+        {/* Lives Left with Homepage Heart-Like Design */}
+        <div style={{ margin: '14px 0 22px', display: 'flex', justifyContent: 'center' }}>
+          <LivesLeftDisplay livesLeft={livesLeft} maxLives={3} />
+        </div>
+
+        {/* Action Buttons: ONLY Run Again and Back to Home */}
         <div className="gameover-btn-group">
-          <button
-            className="btn btn-primary"
-            onClick={(e) => {
-              e.currentTarget.blur();
-              requestFullscreen();
-              restartBGM();
-              startGame();
-            }}
-          >
-            Run again
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => {
-              resetRunSession();
-              setGameState({ status: 'home' });
-            }}
-          >
-            Home
-          </button>
+          {livesLeft > 0 ? (
+            <>
+              <button
+                className="btn btn-primary"
+                disabled={isStartingNext}
+                onClick={handleRunAgain}
+              >
+                {isStartingNext ? 'Starting...' : 'Run again'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  resetRunSession();
+                  setGameState({ status: 'home' });
+                }}
+              >
+                Back to home
+              </button>
+            </>
+          ) : (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                resetRunSession();
+                setGameState({ status: 'home' });
+              }}
+            >
+              Back to home
+            </button>
+          )}
         </div>
-
-        <p className="hint">Press Enter or Space to run again</p>
       </div>
     </div>
   );

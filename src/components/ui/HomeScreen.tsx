@@ -8,23 +8,50 @@ import { SecondaryHexButton } from './SecondaryHexButton';
 import { LeaderboardPage } from './LeaderboardModal';
 import { RewardsPage } from './RewardsModal';
 import { CustomerRegistrationModal } from './CustomerRegistrationModal';
+import { QrScannerModal } from './QrScannerModal';
 import { popularApi } from '../../services/popularApi';
 import type { CustomerProfile } from '../../types/customer';
 
 export function HomeScreen() {
   const [activePage, setActivePage] = useState<'home' | 'leaderboard' | 'rewards'>('home');
   const [activeModal, setActiveModal] = useState<'qr' | null>(null);
+  const [showScannerModal, setShowScannerModal] = useState<boolean>(false);
   const [customer, setCustomer] = useState<CustomerProfile | null>(() =>
     popularApi.getCustomerProfile(),
   );
   const [showRegModal, setShowRegModal] = useState<boolean>(() => !popularApi.isCustomerRegistered());
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
 
+  // QR Token & Database Lives State
+  const [activeToken, setActiveToken] = useState<string | null>(() => {
+    return popularApi.extractTokenFromUrl() || popularApi.getActiveToken();
+  });
+  const [tokenVerification, setTokenVerification] = useState<{
+    valid: boolean;
+    livesRemaining: number;
+    message?: string;
+  }>({ valid: false, livesRemaining: 0 });
+  const [tokenLives, setTokenLives] = useState<number>(0);
+
+  // Sync lives and verification for active token on mount & whenever activeToken changes
+  useEffect(() => {
+    let isMounted = true;
+    popularApi.verifyToken(activeToken).then((res) => {
+      if (isMounted) {
+        setTokenVerification(res);
+        setTokenLives(res.livesRemaining);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [activeToken]);
+
   // Player Stats for 3D Top-Left Badge (Global Rank, Best Score, Total Score)
   const [playerStats, setPlayerStats] = useState(() => {
     const cust = popularApi.getCustomerProfile();
     const best = cust?.bestScore || 0;
-    let total = best;
+    let total = cust?.totalScore || best;
     try {
       const runsRaw = localStorage.getItem('popular_local_runs');
       if (runsRaw) {
@@ -64,7 +91,7 @@ export function HomeScreen() {
           rank = globalBoard.length > 0 ? globalBoard.length : 1;
         }
 
-        let total = best;
+        let total = cust?.totalScore || best;
         try {
           const runsRaw = localStorage.getItem('popular_local_runs');
           if (runsRaw) {
@@ -97,16 +124,36 @@ export function HomeScreen() {
     };
   }, [customer]);
 
-  const handlePlayGame = () => {
+  const canPlay = Boolean(activeToken && tokenVerification.valid && tokenLives > 0);
+
+  const handlePlayGame = async () => {
     // Enforce mandatory registration before first run
     if (!popularApi.isCustomerRegistered()) {
       setShowRegModal(true);
       return;
     }
+
+    // If no token or invalid or no lives left, open scanner directly
+    if (!activeToken || !tokenVerification.valid || tokenLives <= 0) {
+      setShowScannerModal(true);
+      return;
+    }
+
+    // Start database-authoritative game session (decrements 1 life)
+    const sessionRes = await popularApi.startGameSession(activeToken);
+    if (!sessionRes.success) {
+      setTokenLives(sessionRes.livesRemaining);
+      setShowScannerModal(true);
+      return;
+    }
+
+    setTokenLives(sessionRes.livesRemaining);
     requestFullscreen();
     resetRunSession();
     setGameState({ status: 'menu' });
   };
+
+
 
   const handleCustomerRegistered = (profile: CustomerProfile) => {
     setCustomer(profile);
@@ -165,6 +212,21 @@ export function HomeScreen() {
             
           </div>
         </div>
+
+        {/* Top-Right: Active QR Token / Coupon Code Display */}
+        <div className="home-top-token-wrap">
+          {activeToken ? (
+            <div className="home-top-token-badge" title={`Active Coupon Code: ${activeToken}`}>
+              <span className="home-top-token-label">COUPON</span>
+              <span className="home-top-token-code">{activeToken}</span>
+            </div>
+          ) : (
+            <div className="home-top-token-badge home-top-token-empty" title="No coupon scanned">
+              <span className="home-top-token-label">COUPON</span>
+              <span className="home-top-token-none">NO COUPON</span>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Center Hero Section with Logo, Play Button, Stats, and Secondary Actions */}
@@ -194,12 +256,7 @@ export function HomeScreen() {
           />
         </h1>
 
-        <PlayButtonHex onClick={handlePlayGame} />
-
-        {/* Lives Left UI (2 of 3 lives for now) */}
-        <LivesLeftDisplay livesLeft={2} maxLives={3} />
-
-        {/* 3D Stats Row between Play button and Secondary buttons */}
+        {/* 3D Stats Row: Rank, Best, Total above Play button, below Sparky Run logo */}
         <div className="home-hero-stats-row">
           <div className="home-hero-stat-card" title="Global Leaderboard Rank">
             <span className="hero-stat-label">RANK</span>
@@ -211,11 +268,32 @@ export function HomeScreen() {
             <span className="hero-stat-val">{playerStats.bestScore.toLocaleString()}</span>
           </div>
 
-          <div className="home-hero-stat-card" title="Lifetime Cumulative Score">
+          <div className="home-hero-stat-card" title="Lifetime Cumulative Score across All Runs">
             <span className="hero-stat-label">TOTAL</span>
             <span className="hero-stat-val">{playerStats.totalScore.toLocaleString()}</span>
           </div>
         </div>
+
+        {/* Play Button - Disabled when no valid token or 0 lives */}
+        <PlayButtonHex onClick={handlePlayGame} disabled={!canPlay} />
+
+        {/* Server-Authoritative Lives Left UI (3 lives per QR token) */}
+        <LivesLeftDisplay livesLeft={tokenVerification.valid ? tokenLives : 0} maxLives={3} />
+
+        {/* Only if 0 lives: prompt user that they have no lives left and click to scan token */}
+        {(!activeToken || !tokenVerification.valid || tokenLives <= 0) && (
+          <button
+            type="button"
+            id="home-scan-qr-cta"
+            className="home-scan-qr-cta-btn pulse-highlight"
+            onClick={() => setShowScannerModal(true)}
+            aria-label="You have no lives left, click to scan token"
+          >
+            <span className="scan-qr-cta-icon">📷</span>
+            <span className="scan-qr-cta-label">You have no lives left, click to scan token</span>
+            <span className="scan-qr-cta-arrow">➔</span>
+          </button>
+        )}
 
         {/* Secondary Action Buttons: Leaderboard (Left) and Rewards (Right) */}
         <div className="home-secondary-row">
@@ -239,6 +317,7 @@ export function HomeScreen() {
           onClose={() => setIsEditingProfile(false)}
         />
       )}
+
 
       {/* In-Store QR Code Modal for sharing / counter scan */}
       {activeModal === 'qr' && (
@@ -289,6 +368,17 @@ export function HomeScreen() {
             </div>
           </div>
         </div>
+      )}
+      {/* Live High-Tech QR Scanner Modal */}
+      {showScannerModal && (
+        <QrScannerModal
+          onClose={() => setShowScannerModal(false)}
+          onSuccess={(token, lives) => {
+            setActiveToken(token);
+            setTokenLives(lives);
+            setTokenVerification({ valid: true, livesRemaining: lives });
+          }}
+        />
       )}
     </div>
   );
