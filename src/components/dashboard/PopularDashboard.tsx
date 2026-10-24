@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { DashboardHome } from './DashboardHome';
 import { DashboardPlayers } from './DashboardPlayers';
 import { DashboardRewards } from './DashboardRewards';
+import { AdminLoginModal } from './AdminLoginModal';
 import {
   IconHome,
   IconUsers,
   IconGift,
   IconGamepad,
   IconMenu,
+  IconLogout,
 } from './DashboardIcons';
 import './dashboard.css';
 
@@ -16,8 +18,26 @@ interface PopularDashboardProps {
 }
 
 export function PopularDashboard({ onBackToGame }: PopularDashboardProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return !!sessionStorage.getItem('gf_admin_token');
+  });
   const [activeTab, setActiveTab] = useState<'home' | 'players' | 'rewards'>('home');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('gf_admin_token');
+    sessionStorage.removeItem('gf_admin_user');
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <AdminLoginModal
+        onLoginSuccess={() => setIsAuthenticated(true)}
+        onBackToGame={onBackToGame}
+      />
+    );
+  }
 
   return (
     <div className="pet-dash-container">
@@ -122,6 +142,15 @@ export function PopularDashboard({ onBackToGame }: PopularDashboardProps) {
             >
               <IconGamepad />
               <span>Play Game</span>
+            </button>
+            <button
+              type="button"
+              className="pet-btn-logout"
+              onClick={handleLogout}
+              title="Log out of Admin Dashboard"
+            >
+              <IconLogout />
+              <span>Logout</span>
             </button>
           </div>
         </header>

@@ -12,11 +12,11 @@ export function DashboardPlayers() {
   const [sessions, setSessions] = useState<BrandPlayerSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
-  // Fetch real players of Popular Electricals from PostgreSQL database
+  // Fetch real players of Popular Electricals Qatar from PostgreSQL database
   useEffect(() => {
     setLoadingPlayers(true);
     popularApi
-      .getBrandPlayers('popular')
+      .getBrandPlayers('popular-electricals-qatar')
       .then((realPlayers) => {
         setPlayersList(realPlayers || []);
       })
@@ -40,13 +40,13 @@ export function DashboardPlayers() {
     );
   }, [search, playersList]);
 
-  // Open player details modal and fetch all games played by this user under Popular
+  // Open player details modal and fetch all games played by this user under Popular Electricals Qatar
   const handleOpenPlayerModal = async (player: BrandPlayer) => {
     setSelectedPlayer(player);
     setLoadingSessions(true);
 
     try {
-      const res = await popularApi.getPlayerBrandSessions(player.id, 'popular');
+      const res = await popularApi.getPlayerBrandSessions(player.id, 'popular-electricals-qatar');
       if (res && res.sessions) {
         setSessions(res.sessions);
       } else {

@@ -19,7 +19,7 @@ export function DashboardHome({ onNavigateTab }: DashboardHomeProps) {
 
   useEffect(() => {
     popularApi
-      .getBrandPlayers('popular')
+      .getBrandPlayers('popular-electricals-qatar')
       .then((data) => {
         setPlayers(data || []);
       })
@@ -43,7 +43,7 @@ export function DashboardHome({ onNavigateTab }: DashboardHomeProps) {
     setLoadingSessions(true);
 
     try {
-      const res = await popularApi.getPlayerBrandSessions(player.id, 'popular');
+      const res = await popularApi.getPlayerBrandSessions(player.id, 'popular-electricals-qatar');
       if (res && res.sessions) {
         setSessions(res.sessions);
       } else {

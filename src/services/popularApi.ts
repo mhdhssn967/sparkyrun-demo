@@ -1239,9 +1239,35 @@ class PopularApiService {
   }
 
   /**
-   * Fetches all registered players under a brand (default: 'popular') from PostgreSQL.
+   * Authenticates dashboard administrator with strict brand isolation.
    */
-  async getBrandPlayers(brandSlug = 'popular'): Promise<BrandPlayer[]> {
+  async adminLogin(
+    identifier: string,
+    password: string,
+    brandSlug = 'popular-electricals-qatar'
+  ): Promise<{ success: boolean; token: string; user: any; message?: string }> {
+    const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        identifier: identifier.trim(),
+        password,
+        brandSlug,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Invalid credentials or unauthorized brand');
+    }
+
+    return data;
+  }
+
+  /**
+   * Fetches all registered players under a brand (default: 'popular-electricals-qatar') from PostgreSQL.
+   */
+  async getBrandPlayers(brandSlug = 'popular-electricals-qatar'): Promise<BrandPlayer[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/brands/${brandSlug}/players`);
       if (res.ok) {
@@ -1261,7 +1287,7 @@ class PopularApiService {
    */
   async getPlayerBrandSessions(
     userId: string,
-    brandSlug = 'popular'
+    brandSlug = 'popular-electricals-qatar'
   ): Promise<{ player: any; sessions: BrandPlayerSession[] } | null> {
     try {
       const res = await fetch(

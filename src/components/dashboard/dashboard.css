@@ -616,4 +616,269 @@
   color: var(--pet-red);
 }
 
+/* -------------------------------------------------------------
+   6. ADMIN AUTH GATE & LOGIN MODAL
+   ------------------------------------------------------------- */
+.pet-admin-auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 20%, rgba(237, 28, 36, 0.12), rgba(15, 23, 42, 0.85) 75%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pet-admin-auth-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 35px rgba(237, 28, 36, 0.1);
+  width: 100%;
+  max-width: 440px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  animation: petAuthCardIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes petAuthCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pet-admin-auth-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.pet-admin-auth-logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.pet-admin-auth-logo {
+  height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+.pet-admin-auth-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.pet-admin-auth-sub {
+  font-size: 13px;
+  color: #64748B;
+  margin: 0 0 12px 0;
+}
+
+.pet-admin-brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #DC2626;
+  letter-spacing: 0.02em;
+}
+
+.pet-admin-brand-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #DC2626;
+  box-shadow: 0 0 6px #DC2626;
+}
+
+.pet-admin-auth-alert {
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #B91C1C;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.pet-admin-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pet-admin-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pet-admin-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pet-admin-toggle-pwd {
+  background: transparent;
+  border: none;
+  color: #64748B;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.pet-admin-toggle-pwd:hover {
+  color: var(--pet-red);
+}
+
+.pet-admin-input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0F172A;
+  background: #FFFFFF;
+  outline: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.pet-admin-input:focus {
+  border-color: var(--pet-red);
+  box-shadow: 0 0 0 3px rgba(237, 28, 36, 0.12);
+}
+
+.pet-admin-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 18px;
+  background: var(--pet-red);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 6px;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(237, 28, 36, 0.25);
+}
+
+.pet-admin-submit-btn:hover:not(:disabled) {
+  background: var(--pet-red-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(237, 28, 36, 0.35);
+}
+
+.pet-admin-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.pet-admin-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: petSpin 0.7s linear infinite;
+}
+
+@keyframes petSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pet-admin-auth-footer {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #F1F5F9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pet-admin-back-btn {
+  background: transparent;
+  border: none;
+  color: #64748B;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.pet-admin-back-btn:hover {
+  color: #0F172A;
+  background: #F1F5F9;
+}
+
+.pet-admin-auth-footnote {
+  font-size: 10.5px;
+  color: #94A3B8;
+  text-align: center;
+}
+
+/* Header Logout Button */
+.pet-btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFFFF;
+  color: #475569;
+  border: 1px solid var(--pet-border);
+  border-radius: var(--pet-radius-sm);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.pet-btn-logout:hover {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+  color: var(--pet-red);
+}
+
+
 
