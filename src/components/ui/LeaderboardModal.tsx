@@ -82,7 +82,7 @@ function getInitial(name: string): string {
 
 export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
   const handleBack = onBack || onClose || (() => {});
-  const [activeTab, setActiveTab] = useState<'daily' | 'all_time'>('daily');
+  const [activeTab, setActiveTab] = useState<'weekly' | 'all_time'>('weekly');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -93,9 +93,9 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
     const fetchBoard = async () => {
       try {
         const data =
-          activeTab === 'daily'
-            ? await popularApi.getTodayLeaderboard()
-            : await popularApi.getGlobalLeaderboard();
+          activeTab === 'weekly'
+            ? await popularApi.getWeeklyLeaderboard('popular-electricals-qatar')
+            : await popularApi.getAllTimeLeaderboard('popular-electricals-qatar');
 
         if (isMounted) {
           setEntries(data);
@@ -126,7 +126,7 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
 
       {/* Main Container */}
       <div className="smooth-lb-container">
-        {/* Top Header Bar matching screenshot */}
+        {/* Top Header Bar */}
         <header className="smooth-lb-header">
           <button
             type="button"
@@ -139,17 +139,17 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
 
           <h1 className="smooth-lb-title">Leaderboard</h1>
 
-          <div></div>
+          <div style={{ width: 40 }} />
         </header>
 
-        {/* Capsule Segmented Tab Switcher (Daily | All time) */}
+        {/* Capsule Segmented Tab Switcher (Weekly | All Time) */}
         <div className="smooth-lb-tabs-capsule">
           <button
             type="button"
-            className={`smooth-lb-tab-pill ${activeTab === 'daily' ? 'active' : ''}`}
-            onClick={() => setActiveTab('daily')}
+            className={`smooth-lb-tab-pill ${activeTab === 'weekly' ? 'active' : ''}`}
+            onClick={() => setActiveTab('weekly')}
           >
-            Daily
+            Weekly
           </button>
 
           <button
@@ -236,11 +236,11 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
               </div>
             </div>
 
-            {/* Column Header Strip (Rank | Player | Points) */}
+            {/* Column Header Strip */}
             <div className="smooth-lb-table-head">
               <span className="th-rank">Rank</span>
               <span className="th-player">Player</span>
-              <span className="th-points">Points</span>
+              <span className="th-points">{activeTab === 'all_time' ? 'Total / Best' : 'Points'}</span>
             </div>
 
             {/* List of cards from #4 onwards */}
@@ -256,12 +256,19 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
                     {getInitial(entry.displayName)}
                   </div>
 
-                  <span className="smooth-card-player-name">
-                    {entry.isCurrentUser ? `${entry.displayName}(You)` : entry.displayName}
-                  </span>
+                  <div className="smooth-card-player-info" style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                    <div className="smooth-card-player-name">
+                      {entry.isCurrentUser ? `${entry.displayName} (You)` : entry.displayName}
+                    </div>
+                    {activeTab === 'all_time' && typeof entry.gamesPlayed === 'number' && (
+                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+                        {entry.gamesPlayed} {entry.gamesPlayed === 1 ? 'game' : 'games'} played • Best: {entry.bestScore?.toLocaleString() ?? entry.coins.toLocaleString()}
+                      </div>
+                    )}
+                  </div>
 
                   <span className="smooth-card-points">
-                    {entry.coins.toLocaleString()} points
+                    {entry.coins.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280' }}>pts</span>
                   </span>
                 </div>
               ))}

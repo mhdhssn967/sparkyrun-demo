@@ -508,71 +508,44 @@ class PopularApiService {
   }
 
   // 3. Leaderboard Queries
-  async getTodayLeaderboard(): Promise<LeaderboardEntry[]> {
+  async getWeeklyLeaderboard(brandSlug = 'popular-electricals-qatar'): Promise<LeaderboardEntry[]> {
+    const currentProfile = this.getCustomerProfile();
     const today = getQatarTodayDate();
-    const currentProfile = this.getCustomerProfile();
+    const timestamp = Date.now();
 
-    // Try Express backend first
+    // 1. Fetch live Weekly leaderboard from backend
     try {
-      const res = await fetch(`${API_BASE_URL}/api/leaderboard/today?date=${today}`);
+      const res = await fetch(`${API_BASE_URL}/api/leaderboard/weekly?brand=${encodeURIComponent(brandSlug)}`);
       if (res.ok) {
-        const json = await res.json();
-        if (Array.isArray(json) && json.length > 0) return json;
+        const data = await res.json();
+        if (data.success && Array.isArray(data.leaderboard)) {
+          return data.leaderboard.map((item: any, idx: number) => {
+            const isCurrent = currentProfile
+              ? (item.userId && item.userId === currentProfile.id) ||
+                (item.phone && currentProfile.phone && item.phone.replace(/\D/g, '') === currentProfile.phone.replace(/\D/g, '')) ||
+                (item.name && currentProfile.name && item.name.trim().toLowerCase() === currentProfile.name.trim().toLowerCase())
+              : false;
+
+            return {
+              rank: item.rank || idx + 1,
+              customerId: item.userId || item.id || `weekly_${idx + 1}`,
+              displayName: item.name || 'Anonymous Runner',
+              maskedPhone: item.phone ? maskPhoneNumber(item.phone) : '+974 55***000',
+              score: Number(item.score) || 0,
+              coins: Number(item.score) || 0,
+              date: today,
+              dateDisplay: formatQatarDateDisplay(timestamp),
+              timestamp,
+              isCurrentUser: isCurrent,
+            };
+          });
+        }
       }
-    } catch {
-      /* fallback below */
+    } catch (err) {
+      console.warn('Failed to fetch live weekly leaderboard:', err);
     }
 
-    // Combine seed with local customer runs
-    const localRuns: Omit<LeaderboardEntry, 'rank'>[] = [];
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_LOCAL_RUNS);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Omit<LeaderboardEntry, 'rank'>[];
-        localRuns.push(...parsed);
-      }
-    } catch {
-      /* ignore */
-    }
-
-    // Filter to runs matching Qatar today date
-    const allTodayRuns = [...localRuns, ...SEED_LEADERBOARD].filter((r) => r.date === today);
-
-    // Group by customer and take best score
-    const bestByCustomer = new Map<string, Omit<LeaderboardEntry, 'rank'>>();
-    for (const r of allTodayRuns) {
-      const key = r.customerId;
-      const existing = bestByCustomer.get(key);
-      if (!existing || r.score > existing.score) {
-        bestByCustomer.set(key, r);
-      }
-    }
-
-    // Sort descending by score
-    const sorted = Array.from(bestByCustomer.values()).sort((a, b) => b.score - a.score);
-
-    return sorted.map((entry, idx) => ({
-      ...entry,
-      rank: idx + 1,
-      isCurrentUser: currentProfile ? entry.customerId === currentProfile.id : entry.customerId === 'guest',
-    }));
-  }
-
-  async getGlobalLeaderboard(): Promise<LeaderboardEntry[]> {
-    const currentProfile = this.getCustomerProfile();
-
-    // Try Express backend
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/leaderboard/global`);
-      if (res.ok) {
-        const json = await res.json();
-        if (Array.isArray(json) && json.length > 0) return json;
-      }
-    } catch {
-      /* fallback below */
-    }
-
-    // Combine seed with local customer runs
+    // Fallback: local customer run cache
     const localRuns: Omit<LeaderboardEntry, 'rank'>[] = [];
     try {
       const raw = localStorage.getItem(STORAGE_KEY_LOCAL_RUNS);
@@ -595,12 +568,98 @@ class PopularApiService {
     }
 
     const sorted = Array.from(bestByCustomer.values()).sort((a, b) => b.score - a.score);
-
     return sorted.map((entry, idx) => ({
       ...entry,
       rank: idx + 1,
       isCurrentUser: currentProfile ? entry.customerId === currentProfile.id : entry.customerId === 'guest',
     }));
+  }
+
+  // Backward-compatible alias for getTodayLeaderboard
+  async getTodayLeaderboard(brandSlug = 'popular-electricals-qatar'): Promise<LeaderboardEntry[]> {
+    return this.getWeeklyLeaderboard(brandSlug);
+  }
+
+  async getAllTimeLeaderboard(brandSlug = 'popular-electricals-qatar'): Promise<LeaderboardEntry[]> {
+    const currentProfile = this.getCustomerProfile();
+    const today = getQatarTodayDate();
+    const timestamp = Date.now();
+
+    // 1. Fetch live All-Time leaderboard from backend
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/leaderboard/all-time?brand=${encodeURIComponent(brandSlug)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.leaderboard)) {
+          return data.leaderboard.map((item: any, idx: number) => {
+            const isCurrent = currentProfile
+              ? (item.userId && item.userId === currentProfile.id) ||
+                (item.phone && currentProfile.phone && item.phone.replace(/\D/g, '') === currentProfile.phone.replace(/\D/g, '')) ||
+                (item.name && currentProfile.name && item.name.trim().toLowerCase() === currentProfile.name.trim().toLowerCase())
+              : false;
+
+            // All-Time leaderboard is ranked by cumulative totalScore
+            const totalPoints = Number(item.totalScore ?? item.score ?? 0);
+            const bestPts = Number(item.bestScore ?? item.score ?? 0);
+
+            return {
+              rank: item.rank || idx + 1,
+              customerId: item.userId || item.id || `alltime_${idx + 1}`,
+              displayName: item.name || 'Anonymous Runner',
+              maskedPhone: item.phone ? maskPhoneNumber(item.phone) : '+974 55***000',
+              score: totalPoints,
+              coins: totalPoints,
+              totalScore: totalPoints,
+              bestScore: bestPts,
+              gamesPlayed: Number(item.gamesPlayed) || 1,
+              date: today,
+              dateDisplay: formatQatarDateDisplay(timestamp),
+              timestamp,
+              isCurrentUser: isCurrent,
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch live all-time leaderboard:', err);
+    }
+
+    // Fallback: local customer run cache
+    const localRuns: Omit<LeaderboardEntry, 'rank'>[] = [];
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_LOCAL_RUNS);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Omit<LeaderboardEntry, 'rank'>[];
+        localRuns.push(...parsed);
+      }
+    } catch {
+      /* ignore */
+    }
+
+    const allRuns = [...localRuns, ...SEED_LEADERBOARD];
+    const totalByCustomer = new Map<string, Omit<LeaderboardEntry, 'rank'>>();
+    for (const r of allRuns) {
+      const key = r.customerId;
+      const existing = totalByCustomer.get(key);
+      if (!existing) {
+        totalByCustomer.set(key, { ...r });
+      } else {
+        existing.score += r.score;
+        existing.coins += r.coins;
+      }
+    }
+
+    const sorted = Array.from(totalByCustomer.values()).sort((a, b) => b.score - a.score);
+    return sorted.map((entry, idx) => ({
+      ...entry,
+      rank: idx + 1,
+      isCurrentUser: currentProfile ? entry.customerId === currentProfile.id : entry.customerId === 'guest',
+    }));
+  }
+
+  // Backward-compatible alias for getGlobalLeaderboard
+  async getGlobalLeaderboard(brandSlug = 'popular-electricals-qatar'): Promise<LeaderboardEntry[]> {
+    return this.getAllTimeLeaderboard(brandSlug);
   }
 
   // 4. Rewards Catalogue & Vouchers

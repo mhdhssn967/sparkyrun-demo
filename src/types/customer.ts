@@ -88,6 +88,24 @@ export interface EndSessionResponse {
   error?: string;
 }
 
+export interface WeeklyLeaderboardPlayer {
+  rank: number;
+  name: string;
+  score: number; // Highest single score
+  phone?: string;
+  userId?: string;
+}
+
+export interface AllTimeLeaderboardPlayer {
+  rank: number;
+  name: string;
+  totalScore: number; // Cumulative total points
+  bestScore: number; // Single best game score
+  gamesPlayed: number; // Total runs completed
+  phone?: string;
+  userId?: string;
+}
+
 export interface LeaderboardEntry {
   rank: number;
   customerId: string;
@@ -95,6 +113,9 @@ export interface LeaderboardEntry {
   maskedPhone: string; // e.g. "+974 55***456"
   score: number;
   coins: number;
+  totalScore?: number;
+  bestScore?: number;
+  gamesPlayed?: number;
   date: string; // "YYYY-MM-DD" in Qatar AST
   dateDisplay: string; // "Today 10:45 AM" or "21 Oct 2026"
   timestamp: number;
