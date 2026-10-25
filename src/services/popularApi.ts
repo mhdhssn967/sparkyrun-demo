@@ -94,7 +94,7 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
     discountValue: 'KEYCHAIN / PEN / CAP',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 5000,
+    requiredCoins: 500,
     icon: '',
   },
   {
@@ -104,7 +104,7 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
     discountValue: 'KEYCHAIN / PEN / CAP',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 5000,
+    requiredCoins: 1000,
     icon: '',
   },
   {
@@ -114,7 +114,7 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
     discountValue: 'KEYCHAIN / PEN / CAP',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 5000,
+    requiredCoins: 2000,
     icon: '',
   },
   {
@@ -124,7 +124,7 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
     discountValue: 'DIARY',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 10000,
+    requiredCoins: 3000,
     icon: '',
   },
   {
@@ -134,7 +134,7 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
     discountValue: 'DIARY BOX',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 16000,
+    requiredCoins: 5000,
     icon: '',
   },
   {
@@ -144,7 +144,7 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
     discountValue: 'WATCH / T-SHIRT',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 30000,
+    requiredCoins: 6000,
     icon: '',
   },
   {
@@ -154,7 +154,7 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
     discountValue: 'WATCH / T-SHIRT',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 30000,
+    requiredCoins: 10000,
     icon: '',
   },
   {
