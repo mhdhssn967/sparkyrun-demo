@@ -4121,7 +4121,7 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
 
 /* Podium Player Name & Points */
 .smooth-player-name {
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 700;
   color: #111827;
   text-align: center;
@@ -4129,26 +4129,33 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
+  letter-spacing: -0.2px;
 }
 
 .smooth-player-name.name-1 {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
+  color: #0F172A;
 }
 
 .smooth-player-points {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6B7280;
+  gap: 5px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #4B5563;
+}
+
+.smooth-podium-slot.rank-1 .smooth-player-points {
+  font-size: 14px;
+  color: #1F2937;
 }
 
 .smooth-coin-icon {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
 /* Table Head Strip */
