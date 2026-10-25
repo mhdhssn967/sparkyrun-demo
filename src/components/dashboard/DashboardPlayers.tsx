@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { IconSearch } from './DashboardIcons';
+import { IconSearch, IconCoin } from './DashboardIcons';
 import { popularApi } from '../../services/popularApi';
 import type { BrandPlayer, BrandPlayerSession } from '../../types/customer';
 import { PlayerDetailsModal } from './PlayerDetailsModal';
@@ -154,10 +154,16 @@ export function DashboardPlayers() {
                       </span>
                     </td>
                     <td style={{ fontWeight: 700, color: '#ED1C24' }}>
-                      {p.bestScore.toLocaleString()} 🪙
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <span>{p.bestScore.toLocaleString()}</span>
+                        <IconCoin style={{ width: 13, height: 13 }} />
+                      </span>
                     </td>
                     <td style={{ color: '#0F172A', fontWeight: 600 }}>
-                      {p.totalScore.toLocaleString()} 🪙
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <span>{p.totalScore.toLocaleString()}</span>
+                        <IconCoin style={{ width: 13, height: 13, color: '#64748B' }} />
+                      </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <button

@@ -18,6 +18,7 @@ import { Player } from './Player';
 import { Road } from './Road';
 import { Sky } from './Sky';
 import { GameEnvironment } from './GameEnvironment';
+import { LuluGiftPickup } from './LuluGiftPickup';
 
 export function GameCanvas() {
   const container = useRef<HTMLDivElement>(null);
@@ -91,6 +92,7 @@ export function GameCanvas() {
         <Crystals />
         <Magnets />
         <Powerups />
+        <LuluGiftPickup />
         <CoinSparkles />
         <Player />
         <LightningSparks />

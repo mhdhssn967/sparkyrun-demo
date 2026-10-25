@@ -12,6 +12,7 @@ interface GameStore {
   magnetActive: boolean;
   turboTime: number;
   turboActive: boolean;
+  luluToast: string | null;
 }
 
 const BEST_KEY = 'doha-dash-best';
@@ -43,6 +44,7 @@ let store: GameStore = {
   magnetActive: false,
   turboTime: 0,
   turboActive: false,
+  luluToast: null,
 };
 const listeners = new Set<() => void>();
 
@@ -130,6 +132,7 @@ function createRuntime(): RuntimeState {
     crystals: [],
     magnets: [],
     powerups: [],
+    luluGifts: [],
   };
 }
 

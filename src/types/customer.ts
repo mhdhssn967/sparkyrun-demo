@@ -74,6 +74,11 @@ export interface StartSessionResponse {
   sessionId?: string;
   livesRemaining: number;
   error?: string;
+  luluGift?: {
+    eligible: boolean;
+    spawnDistance?: number;
+    voucherToken?: string;
+  };
 }
 
 export interface EndSessionResponse {
@@ -147,11 +152,15 @@ export interface ClaimedVoucher {
   rewardId: string;
   rewardTitle: string;
   voucherCode: string; // e.g. "POP-8492-QAT"
-  discountValue: string;
+  discountValue?: string;
+  redeemedCoins: number; // Coins deducted/redeemed for this reward
   claimedAt: string;
-  status: 'active' | 'redeemed';
+  redeemedAt?: string | null;
+  status: 'PENDING' | 'REDEEMED' | 'active' | 'redeemed';
   customerName: string;
   customerPhone: string;
+  customerId?: string;
+  brandSlug?: string;
 }
 
 export interface LiveClaimEvent {

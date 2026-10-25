@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { setGameState } from '../../game/state';
+import { setGameState, runtime } from '../../game/state';
 import { resetRunSession } from '../../game/engine';
 import { requestFullscreen } from '../../utils/fullscreen';
 import { PlayButtonHex } from './PlayButtonHex';
@@ -9,8 +9,9 @@ import { LeaderboardPage } from './LeaderboardModal';
 import { RewardsPage } from './RewardsModal';
 import { CustomerRegistrationModal } from './CustomerRegistrationModal';
 import { QrScannerModal } from './QrScannerModal';
+import { VoucherDetailsModal } from './VoucherDetailsModal';
 import { popularApi } from '../../services/popularApi';
-import type { CustomerProfile } from '../../types/customer';
+import type { CustomerProfile, ClaimedVoucher } from '../../types/customer';
 
 export function HomeScreen() {
   const [activePage, setActivePage] = useState<'home' | 'leaderboard' | 'rewards'>('home');
@@ -20,7 +21,10 @@ export function HomeScreen() {
     popularApi.getCustomerProfile(),
   );
   const [showRegModal, setShowRegModal] = useState<boolean>(() => !popularApi.isCustomerRegistered());
-  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
+
+  // Active Pending Vouchers for floating reward button
+  const [activeVouchers, setActiveVouchers] = useState<ClaimedVoucher[]>([]);
+  const [activeVoucherModal, setActiveVoucherModal] = useState<ClaimedVoucher | null>(null);
 
   // QR Token & Database Lives State
   const [activeToken, setActiveToken] = useState<string | null>(() => {
@@ -42,13 +46,25 @@ export function HomeScreen() {
         setTokenLives(res.livesRemaining);
       }
     });
+
+    // Check for any active claimed reward coupons
+    popularApi.getPendingVouchers('popular-electricals-qatar').then((vouchers) => {
+      if (isMounted) {
+        setActiveVouchers(vouchers);
+      }
+    });
+
     return () => {
       isMounted = false;
     };
-  }, [activeToken]);
+  }, [activeToken, activePage]);
 
   // Player Stats for 3D Top-Left Badge (Global Rank, Best Score, Total Score)
-  const [playerStats, setPlayerStats] = useState(() => {
+  const [playerStats, setPlayerStats] = useState<{
+    globalRank: number | null;
+    bestScore: number;
+    totalScore: number;
+  }>(() => {
     const cust = popularApi.getCustomerProfile();
     const best = cust?.bestScore || 0;
     let total = cust?.totalScore || best;
@@ -66,8 +82,9 @@ export function HomeScreen() {
     } catch {
       /* ignore */
     }
+    const hasPlayed = (best > 0 || total > 0);
     return {
-      globalRank: 1,
+      globalRank: hasPlayed ? 1 : null,
       bestScore: best,
       totalScore: total,
     };
@@ -88,19 +105,24 @@ export function HomeScreen() {
         const globalBoard = await popularApi.getAllTimeLeaderboard('popular-electricals-qatar');
         const best = brandStats.highestScore;
         const total = brandStats.totalPoints;
-        let rank = 1;
+        const gamesPlayed = brandStats.gamesPlayed ?? 0;
 
-        const currentEntry = globalBoard.find((e) => e.isCurrentUser);
-        if (currentEntry) {
-          rank = currentEntry.rank;
-        } else if (total > 0) {
-          const higherScores = globalBoard.filter((e) => (e.totalScore ?? e.coins) > total).length;
-          rank = higherScores + 1;
-        } else if (best > 0) {
-          const higherScores = globalBoard.filter((e) => e.coins > best).length;
-          rank = higherScores + 1;
-        } else {
-          rank = globalBoard.length > 0 ? globalBoard.length + 1 : 1;
+        let rank: number | null = null;
+
+        // If player has never completed a game session or has 0 score, keep rank unranked (null)
+        if (gamesPlayed > 0 || total > 0 || best > 0) {
+          const currentEntry = globalBoard.find((e) => e.isCurrentUser);
+          if (currentEntry) {
+            rank = currentEntry.rank;
+          } else if (total > 0) {
+            const higherScores = globalBoard.filter((e) => (e.totalScore ?? e.coins) > total).length;
+            rank = higherScores + 1;
+          } else if (best > 0) {
+            const higherScores = globalBoard.filter((e) => e.coins > best).length;
+            rank = higherScores + 1;
+          } else {
+            rank = globalBoard.length > 0 ? globalBoard.length + 1 : 1;
+          }
         }
 
         if (isMounted) {
@@ -143,9 +165,41 @@ export function HomeScreen() {
       return;
     }
 
+    // If backend authorized a LuLu gift opportunity for this lucky session, configure on track
+    if (sessionRes.luluGift?.eligible) {
+      const spawnD = sessionRes.luluGift.spawnDistance || 700;
+      runtime.luluGifts = [
+        {
+          id: 77701,
+          lane: 0,
+          d: spawnD,
+          y: 1.25,
+          collected: false,
+          collectAnim: 0,
+          voucherToken: sessionRes.luluGift.voucherToken,
+        },
+      ];
+    } else {
+      runtime.luluGifts = [];
+    }
+
     setTokenLives(sessionRes.livesRemaining);
     requestFullscreen();
     resetRunSession();
+    // Re-apply luluGift after reset if eligible
+    if (sessionRes.luluGift?.eligible) {
+      runtime.luluGifts = [
+        {
+          id: 77701,
+          lane: 0,
+          d: sessionRes.luluGift.spawnDistance || 700,
+          y: 1.25,
+          collected: false,
+          collectAnim: 0,
+          voucherToken: sessionRes.luluGift.voucherToken,
+        },
+      ];
+    }
     setGameState({ status: 'menu' });
   };
 
@@ -154,7 +208,6 @@ export function HomeScreen() {
   const handleCustomerRegistered = (profile: CustomerProfile) => {
     setCustomer(profile);
     setShowRegModal(false);
-    setIsEditingProfile(false);
     // Immediately fetch and update player brand stats for the newly logged in user
     popularApi.getPlayerBrandStats(profile.id || profile.phone, 'popular-electricals-qatar').then((stats) => {
       setPlayerStats((prev) => ({
@@ -187,10 +240,10 @@ export function HomeScreen() {
         {/* Top-Left: 3D Sparky Player Badge */}
         <div
           className="home-player-badge"
-          onClick={() => (customer ? setIsEditingProfile(true) : setShowRegModal(true))}
-          role="button"
-          tabIndex={0}
-          title={customer ? 'Click to Edit Customer Profile' : 'Click to Register Profile'}
+          onClick={() => (!customer ? setShowRegModal(true) : undefined)}
+          role={!customer ? 'button' : undefined}
+          tabIndex={!customer ? 0 : undefined}
+          title={customer ? `Registered Runner: ${customer.name}` : 'Click to Register Profile'}
         >
           {/* Circular Avatar Ring with Sparky Head */}
           <div className="home-player-avatar-ring">
@@ -208,11 +261,7 @@ export function HomeScreen() {
               <span className="home-player-name">
                 {customer?.name ? customer.name.toUpperCase() : 'SPARKY RUNNER'}
               </span>
-              <span className="home-player-edit-icon">✏️</span>
             </div>
-
-            {/* Level Pill matching reference */}
-            
           </div>
         </div>
 
@@ -261,9 +310,11 @@ export function HomeScreen() {
 
         {/* 3D Stats Row: Rank, Best, Total above Play button, below Sparky Run logo */}
         <div className="home-hero-stats-row">
-          <div className="home-hero-stat-card" title="Global Leaderboard Rank">
+          <div className="home-hero-stat-card" title={playerStats.globalRank ? `Global Leaderboard Rank #${playerStats.globalRank}` : 'Play a game to get ranked on the leaderboard!'}>
             <span className="hero-stat-label">RANK</span>
-            <span className="hero-stat-val">#{playerStats.globalRank}</span>
+            <span className="hero-stat-val">
+              {playerStats.globalRank !== null ? `#${playerStats.globalRank}` : '—'}
+            </span>
           </div>
 
           <div className="home-hero-stat-card" title="Personal Best Score">
@@ -292,7 +343,12 @@ export function HomeScreen() {
             onClick={() => setShowScannerModal(true)}
             aria-label="You have no lives left, click to scan token"
           >
-            <span className="scan-qr-cta-icon">📷</span>
+            <span className="scan-qr-cta-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </span>
             <span className="scan-qr-cta-label">You have no lives left, click to scan token</span>
             <span className="scan-qr-cta-arrow">➔</span>
           </button>
@@ -311,16 +367,45 @@ export function HomeScreen() {
         </div>
       </main>
 
-      {/* Mandatory Onboarding / Edit Profile Modal */}
-      {(showRegModal || isEditingProfile) && (
+      {/* Floating Animated Reward Button (Appears if user has any active pending vouchers) */}
+      {activeVouchers.length > 0 && (
+        <button
+          type="button"
+          className="home-floating-reward-pill floating-reward-animate"
+          onClick={() => setActiveVoucherModal(activeVouchers[0])}
+          title={`You have ${activeVouchers.length} pending reward voucher${activeVouchers.length > 1 ? 's' : ''}! Tap to view.`}
+        >
+          <span className="floating-reward-gift-icon">🎁</span>
+          <div className="floating-reward-text-col">
+            <span className="floating-reward-badge-tag">CLAIMED REWARD</span>
+            <span className="floating-reward-title-txt">
+              {activeVouchers[0].rewardTitle}
+              {activeVouchers.length > 1 ? ` (+${activeVouchers.length - 1} more)` : ''}
+            </span>
+          </div>
+          <span className="floating-reward-arrow">➔</span>
+        </button>
+      )}
+
+      {/* Mandatory Onboarding Registration Modal */}
+      {showRegModal && (
         <CustomerRegistrationModal
           onRegistered={handleCustomerRegistered}
           initialProfile={customer}
-          canClose={isEditingProfile}
-          onClose={() => setIsEditingProfile(false)}
+          canClose={false}
+          onClose={() => {}}
         />
       )}
 
+      {/* Standalone Clean Voucher Dialog (No Barcode, shows Name, Phone, Code, Score used) */}
+      {activeVoucherModal && (
+        <VoucherDetailsModal
+          voucher={activeVoucherModal}
+          allVouchers={activeVouchers}
+          onSelectVoucher={(v) => setActiveVoucherModal(v)}
+          onClose={() => setActiveVoucherModal(null)}
+        />
+      )}
 
       {/* In-Store QR Code Modal for sharing / counter scan */}
       {activeModal === 'qr' && (

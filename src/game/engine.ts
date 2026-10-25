@@ -64,6 +64,7 @@ export function resetRunSession() {
   runtime.crystals = [];
   runtime.magnets = [];
   runtime.powerups = [];
+  runtime.luluGifts = [];
   runtime.magnetTimer = 0;
   runtime.turboTimer = 0;
   stopTurboMusic(0.05);

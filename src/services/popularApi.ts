@@ -23,6 +23,41 @@ const STORAGE_KEY_ACTIVE_SESSION = 'popular_active_session';
 const STORAGE_KEY_TOKENS = 'popular_tokens';
 
 import { API_BASE_URL } from '../config/api';
+
+export interface WeeklyWinnerRecord {
+  id: string;
+  brandSlug: string;
+  weekLabel: string;
+  weekStart: string;
+  weekEnd: string;
+  winnerUserId?: string;
+  winnerName: string;
+  winnerPhone?: string;
+  winningScore: number;
+  rank: number;
+  claimed: boolean;
+  rewardTitle?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Fetch historical weekly winners from backend for the active brand
+ */
+export async function fetchWeeklyWinners(
+  brandSlug: string = 'popular-electricals-qatar'
+): Promise<WeeklyWinnerRecord[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/leaderboard/weekly/winners?brand=${encodeURIComponent(brandSlug)}`);
+    const data = await res.json();
+    if (res.ok && data.success && Array.isArray(data.winners)) {
+      return data.winners;
+    }
+  } catch (err) {
+    console.warn('Failed to fetch live weekly winners:', err);
+  }
+  return [];
+}
 import { checkMobileNumber, registerPlayer, getSavedPlayer } from './authService';
 
 /** Helper to mask a phone number for privacy: "+974 55123456" -> "+974 55***456" */
@@ -58,6 +93,60 @@ export function getQatarTodayDate(): string {
   }
 }
 
+/**
+ * Calculates current Qatar week window and time remaining until
+ * next Sunday 12:00 AM AST (UTC+3) leaderboard reset.
+ */
+export function getQatarWeeklyCycle() {
+  const now = new Date();
+  // Qatar is UTC+3 (180 mins)
+  const qatarOffsetMs = 3 * 60 * 60 * 1000;
+  const qatarTime = new Date(now.getTime() + qatarOffsetMs);
+
+  const dayOfWeek = qatarTime.getUTCDay(); // 0 = Sunday, 1 = Monday ... 6 = Saturday
+  const hours = qatarTime.getUTCHours();
+  const minutes = qatarTime.getUTCMinutes();
+  const seconds = qatarTime.getUTCSeconds();
+  const ms = qatarTime.getUTCMilliseconds();
+
+  // Elapsed ms since this week's Sunday 00:00:00 AST
+  const elapsedSinceSundayMs =
+    dayOfWeek * 24 * 60 * 60 * 1000 +
+    hours * 60 * 60 * 1000 +
+    minutes * 60 * 1000 +
+    seconds * 1000 +
+    ms;
+
+  const currentWeekStartUtc = new Date(now.getTime() - elapsedSinceSundayMs);
+  const nextResetUtc = new Date(currentWeekStartUtc.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const msUntilReset = Math.max(0, nextResetUtc.getTime() - now.getTime());
+
+  const daysLeft = Math.floor(msUntilReset / (24 * 60 * 60 * 1000));
+  const hoursLeft = Math.floor((msUntilReset % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  const minutesLeft = Math.floor((msUntilReset % (60 * 60 * 1000)) / (60 * 1000));
+  const secondsLeft = Math.floor((msUntilReset % (60 * 1000)) / 1000);
+
+  let formattedTimeLeft = '';
+  if (daysLeft > 0) {
+    formattedTimeLeft = `${daysLeft}d ${hoursLeft}h ${minutesLeft}m`;
+  } else if (hoursLeft > 0) {
+    formattedTimeLeft = `${hoursLeft}h ${minutesLeft}m ${secondsLeft}s`;
+  } else {
+    formattedTimeLeft = `${minutesLeft}m ${secondsLeft}s`;
+  }
+
+  return {
+    weekStartUtc: currentWeekStartUtc,
+    nextResetUtc,
+    msUntilReset,
+    daysLeft,
+    hoursLeft,
+    minutesLeft,
+    secondsLeft,
+    formattedTimeLeft,
+  };
+}
+
 /** Formats a timestamp into human-readable Qatar time display */
 export function formatQatarDateDisplay(timestamp: number): string {
   const today = getQatarTodayDate();
@@ -89,73 +178,73 @@ export function formatQatarDateDisplay(timestamp: number): string {
 // -------------------------------------------------------------
 export const POPULAR_BRAND_REWARDS: BrandReward[] = [
   {
-    id: 'pop-reward-keychain',
+    id: 'rw_keychain',
     title: 'Keychain',
-    desc: 'Sparky Keychain, Executive Pen, or Official Popular Cap',
-    discountValue: 'KEYCHAIN / PEN / CAP',
-    terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
-    requiredDistance: 0,
-    requiredCoins: 800,
-    icon: '',
-  },
-  {
-    id: 'pop-reward-pen',
-    title: 'Pen',
-    desc: 'Sparky Keychain, Executive Pen, or Official Popular Cap',
-    discountValue: 'KEYCHAIN / PEN / CAP',
+    desc: 'Official Popular Electricals Sparky Keychain',
+    discountValue: 'KEYCHAIN',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
     requiredCoins: 1000,
     icon: '',
   },
   {
-    id: 'pop-reward-Cap',
+    id: 'rw_pen',
+    title: 'Pen',
+    desc: 'Official Popular Electricals Executive Pen',
+    discountValue: 'PEN',
+    terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
+    requiredDistance: 0,
+    requiredCoins: 1500,
+    icon: '',
+  },
+  {
+    id: 'rw_cap',
     title: 'Cap',
-    desc: 'Sparky Keychain, Executive Pen, or Official Popular Cap',
-    discountValue: 'KEYCHAIN / PEN / CAP',
+    desc: 'Official Popular Electricals Brand Cap',
+    discountValue: 'CAP',
+    terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
+    requiredDistance: 0,
+    requiredCoins: 1500,
+    icon: '',
+  },
+  {
+    id: 'rw_diary',
+    title: 'Diary',
+    desc: 'Popular Electricals Executive Diary',
+    discountValue: 'DIARY',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
     requiredCoins: 2000,
     icon: '',
   },
   {
-    id: 'pop-reward-diary',
-    title: 'Diary',
-    desc: 'Popular Electricals Executive Diary',
-    discountValue: 'DIARY',
-    terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
-    requiredDistance: 0,
-    requiredCoins: 3000,
-    icon: '',
-  },
-  {
-    id: 'pop-reward-diary-box',
+    id: 'rw_diary_box',
     title: 'Diary Box',
     desc: 'Premium Popular Electricals Diary Box Set',
     discountValue: 'DIARY BOX',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 5000,
+    requiredCoins: 4000,
     icon: '',
   },
   {
-    id: 'pop-reward-tshirt',
-    title: 'T-Shirt',
-    desc: 'Popular Electricals Exclusive Watch or Official Brand T-Shirt',
-    discountValue: 'WATCH / T-SHIRT',
+    id: 'rw_watch',
+    title: 'Watch',
+    desc: 'Exclusive Popular Electricals Timepiece',
+    discountValue: 'WATCH',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
     requiredCoins: 6000,
     icon: '',
   },
   {
-    id: 'pop-reward-watch',
-    title: 'Watch',
-    desc: 'Popular Electricals Exclusive Watch or Official Brand T-Shirt',
-    discountValue: 'WATCH / T-SHIRT',
+    id: 'rw_shirt',
+    title: 'T-Shirt',
+    desc: 'Official Popular Electricals Mascot T-Shirt',
+    discountValue: 'T-SHIRT',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 10000,
+    requiredCoins: 8000,
     icon: '',
   },
   {
@@ -315,6 +404,20 @@ class PopularApiService {
       return null;
     } catch {
       return null;
+    }
+  }
+
+  saveCustomerProfile(profile: CustomerProfile): void {
+    try {
+      localStorage.setItem(STORAGE_KEY_CUSTOMER, JSON.stringify(profile));
+      const raw = localStorage.getItem('popular_registered_users');
+      const users: CustomerProfile[] = raw ? JSON.parse(raw) : [];
+      const idx = users.findIndex((u) => u.id === profile.id || u.fullPhone === profile.fullPhone || u.phone === profile.phone);
+      if (idx >= 0) users[idx] = profile;
+      else users.push(profile);
+      localStorage.setItem('popular_registered_users', JSON.stringify(users));
+    } catch {
+      /* ignore */
     }
   }
 
@@ -650,7 +753,25 @@ class PopularApiService {
       }
     }
 
-    const sorted = Array.from(totalByCustomer.values()).sort((a, b) => b.score - a.score);
+    // Subtract redeemed reward coins so totalScore and leaderboard ranking decrease
+    const claimedVouchers = this.getClaimedVouchers();
+    const totalClaimedDeduction = claimedVouchers.reduce(
+      (acc, v) => acc + ((v.status as string) !== 'CANCELLED' ? Number(v.redeemedCoins || 0) : 0),
+      0
+    );
+
+    if (totalClaimedDeduction > 0 && currentProfile) {
+      const currentEntry = totalByCustomer.get(currentProfile.id);
+      if (currentEntry) {
+        currentEntry.score = Math.max(0, currentEntry.score - totalClaimedDeduction);
+        currentEntry.coins = Math.max(0, currentEntry.coins - totalClaimedDeduction);
+      }
+    }
+
+    const sorted = Array.from(totalByCustomer.values())
+      .filter((entry) => entry.score > 0) // only players with positive scores remain on leaderboard
+      .sort((a, b) => b.score - a.score);
+
     return sorted.map((entry, idx) => ({
       ...entry,
       rank: idx + 1,
@@ -677,44 +798,171 @@ class PopularApiService {
     }
   }
 
-  async claimReward(rewardId: string): Promise<ClaimedVoucher> {
+  /**
+   * Fetch active/pending vouchers for the current user from backend with local fallback.
+   * Only returns vouchers with status 'PENDING' or 'active' (not yet redeemed by cashier).
+   */
+  async getPendingVouchers(brandSlug = 'popular-electricals-qatar'): Promise<ClaimedVoucher[]> {
     const profile = this.getCustomerProfile();
+    if (!profile) return [];
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/coupons/pending?brand=${encodeURIComponent(brandSlug)}&phone=${encodeURIComponent(
+          profile.fullPhone || profile.phone
+        )}&userId=${encodeURIComponent(profile.id || '')}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.coupons)) {
+          // Sync with local storage
+          const backendVouchers: ClaimedVoucher[] = data.coupons.map((c: any) => ({
+            id: c.id || `vouch_${c.couponCode}`,
+            rewardId: c.rewardId,
+            rewardTitle: c.rewardTitle,
+            voucherCode: c.couponCode || c.voucherCode,
+            discountValue: c.discountValue,
+            redeemedCoins: Number(c.redeemedCoins) || 0,
+            claimedAt: c.claimedAt || c.createdAt || new Date().toISOString(),
+            redeemedAt: c.redeemedAt,
+            status: c.status || 'PENDING',
+            customerName: c.customerName || profile.name,
+            customerPhone: c.customerPhone || profile.fullPhone,
+            customerId: c.customerId || profile.id,
+            brandSlug: c.brandSlug || brandSlug,
+          }));
+
+          // Keep local storage synchronized with non-redeemed vouchers
+          localStorage.setItem(STORAGE_KEY_VOUCHERS, JSON.stringify(backendVouchers));
+          return backendVouchers;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch pending vouchers from server, using local cache:', err);
+    }
+
+    // Fallback: local active vouchers only
+    const local = this.getClaimedVouchers();
+    return local.filter((v) => v.status === 'PENDING' || v.status === 'active');
+  }
+
+  /**
+   * Claim a reward securely (Backend-Authoritative):
+   * 1. Sends player intent (rewardId, brandSlug, phone/userId) to backend POST /api/coupons/claim.
+   * 2. Backend verifies available coins against server-side GameSession records.
+   * 3. Backend generates the authentic unique coupon code (e.g. PET-XXXX-QAT) and saves record with status: "PENDING".
+   * 4. Backend returns authoritative coupon and updated remaining balance.
+   */
+  async claimReward(rewardId: string, brandSlug = 'popular-electricals-qatar'): Promise<ClaimedVoucher> {
+    const profile = this.getCustomerProfile();
+    if (!profile) throw new Error('Player profile not found. Please register first.');
+
     const reward = POPULAR_BRAND_REWARDS.find((r) => r.id === rewardId);
     if (!reward) throw new Error('Reward not found');
 
-    // Generate authentic voucher code: POP-XXXX-QAT
-    const randCode = Math.floor(1000 + Math.random() * 9000);
-    const voucherCode = `POP-${randCode}-QAT`;
+    let createdVoucher: ClaimedVoucher | null = null;
 
-    const voucher: ClaimedVoucher = {
-      id: `vouch_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      rewardId: reward.id,
-      rewardTitle: reward.title,
-      voucherCode,
-      discountValue: reward.discountValue,
-      claimedAt: new Date().toISOString(),
-      status: 'active',
-      customerName: profile ? profile.name : 'Valued Customer',
-      customerPhone: profile ? profile.fullPhone : '+974 55123456',
-    };
-
-    // Save to local vouchers
-    const vouchers = this.getClaimedVouchers();
-    vouchers.unshift(voucher);
+    // 1. Call Backend API with player intent (pure server-side verification and code generation)
     try {
-      localStorage.setItem(STORAGE_KEY_VOUCHERS, JSON.stringify(vouchers));
+      const res = await fetch(`${API_BASE_URL}/api/coupons/claim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandSlug,
+          rewardId: reward.id,
+          phone: profile.fullPhone || `+974 ${profile.phone}`,
+          userId: profile.id,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.coupon) {
+          createdVoucher = {
+            id: data.coupon.id,
+            rewardId: data.coupon.rewardId || reward.id,
+            rewardTitle: data.coupon.rewardTitle || reward.title,
+            voucherCode: data.coupon.couponCode || data.coupon.voucherCode,
+            discountValue: data.coupon.discountValue || reward.discountValue,
+            redeemedCoins: Number(data.coupon.redeemedCoins) || reward.requiredCoins,
+            claimedAt: data.coupon.claimedAt || new Date().toISOString(),
+            status: data.coupon.status || 'PENDING',
+            customerName: data.coupon.customerName || profile.name,
+            customerPhone: data.coupon.customerPhone || profile.fullPhone,
+            customerId: data.coupon.customerId || profile.id,
+            brandSlug: data.coupon.brandSlug || brandSlug,
+          };
+
+          // Update local profile balance from server-authoritative balance
+          if (typeof data.remainingCoins === 'number') {
+            profile.totalCoins = data.remainingCoins;
+            if (profile.totalScore) {
+              profile.totalScore = Math.max(0, profile.totalScore - (Number(data.coupon.redeemedCoins) || reward.requiredCoins));
+            }
+          } else {
+            profile.totalCoins = Math.max(0, (profile.totalCoins || 0) - reward.requiredCoins);
+          }
+          this.saveCustomerProfile(profile);
+        }
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Server rejected reward claim. Check your coin balance.');
+      }
+    } catch (err: any) {
+      // Re-throw authoritative server rejection errors (e.g. Insufficient coins)
+      if (err.message && (err.message.includes('Insufficient') || err.message.includes('rejected'))) {
+        throw err;
+      }
+      console.warn('Backend server claim unavailable, evaluating offline mode:', err);
+    }
+
+    // 2. Offline / Local Fallback (only if server was unreachable)
+    if (!createdVoucher) {
+      const brandStats = await this.getPlayerBrandStats(profile.id || profile.phone, brandSlug);
+      const availableCoins = Math.max(profile.totalCoins || 0, brandStats.totalPoints || 0);
+
+      if (availableCoins < reward.requiredCoins) {
+        throw new Error(`Insufficient coins. You have ${availableCoins} coins, but ${reward.requiredCoins} are required.`);
+      }
+
+      const randCode = Math.floor(1000 + Math.random() * 9000);
+      createdVoucher = {
+        id: `vouch_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        rewardId: reward.id,
+        rewardTitle: reward.title,
+        voucherCode: `PET-${randCode}-QAT`,
+        discountValue: reward.discountValue,
+        redeemedCoins: reward.requiredCoins,
+        claimedAt: new Date().toISOString(),
+        status: 'PENDING',
+        customerName: profile.name,
+        customerPhone: profile.fullPhone || `+974 ${profile.phone}`,
+        customerId: profile.id,
+        brandSlug,
+      };
+
+      profile.totalCoins = Math.max(0, availableCoins - reward.requiredCoins);
+      if (profile.totalScore) profile.totalScore = Math.max(0, profile.totalScore - reward.requiredCoins);
+      this.saveCustomerProfile(profile);
+    }
+
+    // 3. Save to local active vouchers list
+    const currentVouchers = this.getClaimedVouchers();
+    currentVouchers.unshift(createdVoucher);
+    try {
+      localStorage.setItem(STORAGE_KEY_VOUCHERS, JSON.stringify(currentVouchers));
     } catch {
       /* ignore */
     }
 
-    // Add to local live claims feed
+    // 4. Add to live community claims feed
     try {
       const feedRaw = localStorage.getItem('popular_live_claims_feed');
       const feed: LiveClaimEvent[] = feedRaw ? JSON.parse(feedRaw) : [...SEED_LIVE_CLAIMS];
       feed.unshift({
         id: `event_${Date.now()}`,
-        customerName: profile ? profile.name : 'Popular Customer',
-        maskedPhone: profile ? maskPhoneNumber(profile.fullPhone) : '+974 55***000',
+        customerName: profile.name,
+        maskedPhone: maskPhoneNumber(profile.fullPhone || `+974 ${profile.phone}`),
         rewardTitle: reward.title,
         timeAgo: 'Just now',
         timestamp: Date.now(),
@@ -724,18 +972,174 @@ class PopularApiService {
       /* ignore */
     }
 
-    // Backend sync attempt
+    return createdVoucher;
+  }
+
+  /**
+   * Dashboard Cashier API: Get all brand coupons (pending & redeemed) for dashboard management.
+   */
+  async getBrandCoupons(brandSlug = 'popular-electricals-qatar'): Promise<ClaimedVoucher[]> {
     try {
-      await fetch(`${API_BASE_URL}/api/rewards/claim`, {
+      const token = sessionStorage.getItem('gf_admin_token');
+      const res = await fetch(`${API_BASE_URL}/api/coupons?brand=${encodeURIComponent(brandSlug)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.coupons)) {
+          return data.coupons.map((c: any) => ({
+            id: c.id,
+            rewardId: c.rewardId,
+            rewardTitle: c.rewardTitle,
+            voucherCode: c.couponCode || c.voucherCode,
+            discountValue: c.discountValue,
+            redeemedCoins: Number(c.redeemedCoins) || 0,
+            claimedAt: c.claimedAt || c.createdAt,
+            redeemedAt: c.redeemedAt,
+            status: c.status || 'PENDING',
+            customerName: c.customerName,
+            customerPhone: c.customerPhone,
+            customerId: c.customerId,
+            brandSlug: c.brandSlug || brandSlug,
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch brand coupons for dashboard:', err);
+    }
+
+    // Fallback: load local claimed vouchers
+    return this.getClaimedVouchers();
+  }
+
+  /**
+   * Dashboard Cashier API: Mark a coupon as REDEEMED.
+   * Once redeemed, status changes to REDEEMED and it stops displaying on the user side.
+   */
+  async redeemCoupon(
+    couponIdOrCode: string,
+    brandSlug = 'popular-electricals-qatar'
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const token = sessionStorage.getItem('gf_admin_token');
+      const res = await fetch(`${API_BASE_URL}/api/coupons/redeem`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          couponId: couponIdOrCode,
+          couponCode: couponIdOrCode,
+          brandSlug,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          // Update local storage status
+          const vouchers = this.getClaimedVouchers().map((v) => {
+            if (v.id === couponIdOrCode || v.voucherCode === couponIdOrCode) {
+              return { ...v, status: 'REDEEMED' as const, redeemedAt: new Date().toISOString() };
+            }
+            return v;
+          });
+          localStorage.setItem(STORAGE_KEY_VOUCHERS, JSON.stringify(vouchers));
+          return { success: true };
+        }
+      }
+    } catch (err: any) {
+      console.warn('Backend coupon redeem note:', err);
+    }
+
+    // Local fallback update
+    const vouchers = this.getClaimedVouchers().map((v) => {
+      if (v.id === couponIdOrCode || v.voucherCode === couponIdOrCode) {
+        return { ...v, status: 'REDEEMED' as const, redeemedAt: new Date().toISOString() };
+      }
+      return v;
+    });
+    localStorage.setItem(STORAGE_KEY_VOUCHERS, JSON.stringify(vouchers));
+    return { success: true };
+  }
+
+  /**
+   * In-Game Special LuLu Gift Claim:
+   * Called when player runs into the 3D LuLu gift on track.
+   */
+  async claimLuluGift(voucherToken?: string, brandSlug = 'popular-electricals-qatar'): Promise<ClaimedVoucher | null> {
+    const profile = this.getCustomerProfile();
+    const session = this.getActiveSession();
+    const token = voucherToken || `lulu_mock_${Date.now()}`;
+    const code = `LULU-${Math.floor(1000 + Math.random() * 9000)}-QAT`;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/rewards/claim-lulu`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(voucher),
+        body: JSON.stringify({
+          sessionId: session?.sessionId || 'test_session',
+          voucherToken: token,
+          userId: profile?.id,
+          brandSlug,
+        }),
       });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.coupon) {
+          const v: ClaimedVoucher = {
+            id: data.coupon.id,
+            rewardId: 'rw_lulu_100',
+            rewardTitle: data.coupon.rewardTitle || 'LuLu 100 QAR In-Game Special Voucher',
+            voucherCode: data.coupon.couponCode || code,
+            discountValue: '100 QAR Voucher',
+            redeemedCoins: 0,
+            claimedAt: new Date().toISOString(),
+            status: 'PENDING',
+            customerName: profile?.name || 'Valued Customer',
+            customerPhone: profile?.phone || '',
+            customerId: profile?.id,
+            brandSlug,
+          };
+          const list = this.getClaimedVouchers();
+          list.unshift(v);
+          try {
+            localStorage.setItem(STORAGE_KEY_VOUCHERS, JSON.stringify(list));
+          } catch {
+            /* ignore */
+          }
+          return v;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend claim-lulu note:', err);
+    }
+
+    // Local fallback for testing / offline demo
+    const localVoucher: ClaimedVoucher = {
+      id: `vch_${Date.now()}`,
+      rewardId: 'rw_lulu_100',
+      rewardTitle: 'LuLu 100 QAR In-Game Special Voucher',
+      voucherCode: code,
+      discountValue: '100 QAR Voucher',
+      redeemedCoins: 0,
+      claimedAt: new Date().toISOString(),
+      status: 'PENDING',
+      customerName: profile?.name || 'Valued Customer',
+      customerPhone: profile?.phone || '',
+      customerId: profile?.id,
+      brandSlug,
+    };
+    const list = this.getClaimedVouchers();
+    list.unshift(localVoucher);
+    try {
+      localStorage.setItem(STORAGE_KEY_VOUCHERS, JSON.stringify(list));
     } catch {
       /* ignore */
     }
-
-    return voucher;
+    return localVoucher;
   }
 
   // 5. Live Feed of Community Claims
@@ -764,6 +1168,24 @@ class PopularApiService {
 
   // 6. Weekly Winners by Previous Weeks (Only 1 Winner per week - High Scorer awarded PET Gift Bag)
   async getPreviousWeeklyWinners(): Promise<WeeklyWinnersGroup[]> {
+    try {
+      const liveWinners = await fetchWeeklyWinners('popular-electricals-qatar');
+      if (Array.isArray(liveWinners) && liveWinners.length > 0) {
+        return liveWinners.map((w, idx) => ({
+          weekKey: w.id || `live_week_${idx}`,
+          weekLabel: w.weekLabel || `Week ${idx + 1}`,
+          weekNumber: idx + 1,
+          winner: {
+            name: w.winnerName,
+            score: Number(w.winningScore) || 0,
+            prize: w.rewardTitle || 'PET Gift Bag (T-Shirt, Watch, Book Case)',
+          },
+        }));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch live weekly winners in getPreviousWeeklyWinners:', err);
+    }
+
     const seedWeeklyWinners: WeeklyWinnersGroup[] = [
       {
         weekKey: 'week-2026-42',
@@ -1107,6 +1529,7 @@ class PopularApiService {
             success: true,
             sessionId: data.sessionId,
             livesRemaining: data.livesRemaining,
+            luluGift: data.luluGift,
           };
         }
       } else if (res.status === 400 || res.status === 403 || res.status === 404) {
@@ -1403,10 +1826,19 @@ class PopularApiService {
             const totalPoints = Number(data.totalPoints ?? data.totalScore ?? 0);
             const gamesPlayed = Number(data.gamesPlayed ?? 0);
 
+            // Calculate net available spendable coins by subtracting claimed vouchers
+            const claimedVouchers = this.getClaimedVouchers();
+            const totalDeducted = claimedVouchers.reduce(
+              (acc, v) => acc + ((v.status as string) !== 'CANCELLED' ? Number(v.redeemedCoins || 0) : 0),
+              0
+            );
+            const netAvailable = Math.max(0, totalPoints - totalDeducted);
+
             // Synchronize with local profile cache
             if (cust) {
               cust.bestScore = Math.max(cust.bestScore || 0, highestScore);
-              cust.totalScore = Math.max(cust.totalScore || 0, totalPoints);
+              cust.totalScore = totalPoints; // lifetime cumulative score
+              cust.totalCoins = netAvailable; // spendable coin balance
               try {
                 localStorage.setItem(STORAGE_KEY_CUSTOMER, JSON.stringify(cust));
               } catch {
@@ -1417,7 +1849,7 @@ class PopularApiService {
             return {
               highestScore,
               bestScore: highestScore,
-              totalPoints,
+              totalPoints: netAvailable,
               totalScore: totalPoints,
               gamesPlayed,
             };

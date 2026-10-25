@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { IconLock } from './DashboardIcons';
+import { IconLock, IconAlert } from './DashboardIcons';
 import { popularApi } from '../../services/popularApi';
 
 interface AdminLoginModalProps {
@@ -67,8 +67,8 @@ export function AdminLoginModal({ onLoginSuccess, onBackToGame }: AdminLoginModa
 
         {/* Error Alert Banner */}
         {error && (
-          <div className="pet-admin-auth-alert" role="alert">
-            <span style={{ fontSize: '15px' }}>⚠️</span>
+          <div className="pet-admin-auth-alert" role="alert" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <IconAlert style={{ width: 16, height: 16, flexShrink: 0 }} />
             <span>{error}</span>
           </div>
         )}

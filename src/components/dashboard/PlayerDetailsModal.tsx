@@ -1,4 +1,4 @@
-import { IconClose, IconClock } from './DashboardIcons';
+import { IconClose, IconClock, IconCoin } from './DashboardIcons';
 import type { BrandPlayer, BrandPlayerSession } from '../../types/customer';
 
 interface PlayerDetailsModalProps {
@@ -297,8 +297,9 @@ export function PlayerDetailsModal({
                               <div className="pet-game-stat-label">
                                 Score
                               </div>
-                              <div className="pet-game-stat-val score">
-                                {g.score.toLocaleString()} 🪙
+                              <div className="pet-game-stat-val score" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <span>{g.score.toLocaleString()}</span>
+                                <IconCoin style={{ width: 13, height: 13 }} />
                               </div>
                             </div>
                           </div>

@@ -145,13 +145,93 @@ Use this directory map whenever a specific feature or UI component needs changes
 * [x] **Milestone 72**: Admin Login Protection & Brand Scoping for `/dashboard`. Protected `/dashboard` with an Admin Auth Gate modal (`AdminLoginModal.tsx`) requiring registered Email/Username and Password (`admin@sparkyrun.com`). Connected `popularApi.adminLogin` against GameFaktory backend (`POST /api/admin/login`) with strict multi-tenant brand isolation (`brandSlug: 'popular-electricals-qatar'`). Stored session in `sessionStorage` (`gf_admin_token`, `gf_admin_user`) for automatic persistence across page refreshes. Scoped player roster, KPIs, and session audits strictly to `popular-electricals-qatar`. Added a header `[ Logout ]` button (`IconLogout`) that immediately clears `sessionStorage` and returns to the Admin Auth Gate.
 * [x] **Milestone 73**: Live Weekly & All-Time Leaderboard Integration (`GET /api/leaderboard/weekly`, `GET /api/leaderboard/all-time`). Connected `LeaderboardModal.tsx` and `popularApi.ts` to live GameFaktory backend endpoints with `brand=popular-electricals-qatar`. Weekly tab displays players ranked by single highest score for the current week (Sunday to Saturday), while All-Time tab displays players ranked by cumulative total points across all runs, accompanied by their personal best and games played count. Highlighted the active logged-in player with "(You)" badges and smooth animations. Fallbacks preserved for offline resiliency. Verified via live curl probe, TypeScript type checking, and Vite production build.
 * [x] **Milestone 74**: Live Brand-Scoped Player Stats Integration (`GET /api/player/stats?brand=...`). Implemented `popularApi.getPlayerBrandStats` querying the backend endpoint with phone, userId, or token code. Synchronized personal `highestScore` (Best) and `totalPoints` (Cumulative Total) in real time: on initial mount in `HomeScreen.tsx`, immediately upon registration or login in `handleCustomerRegistered`, and when game runs finish in `GameOverScreen.tsx`. Robust local fallback preserved for seamless offline play. Verified with `npx tsc --noEmit` and production build.
+* [x] **Milestone 75**: Unranked State for New Players (`RANK —`). Updated `HomeScreen.tsx` to detect when a player has completed 0 games and has 0 score (`gamesPlayed === 0 && totalPoints === 0 && highestScore === 0`). Instead of assigning a misleading `#1` or generic tail rank `#51`, the Home Screen displays an unranked dash (`RANK —`) with the tooltip *"Play a game to get ranked on the leaderboard!"*. As soon as the player finishes their first run, their live global rank (`#1`, `#2`, etc.) unlocks and displays automatically. Validated cleanly with `npx tsc --noEmit`.
+* [x] **Milestone 76**: Secure Backend-Authoritative Reward Coupon Creation, Balance Deduction & Cashier Redemption (`/dashboard`).
+  - **Zero Trust Security**: The frontend does not generate coupon codes or dictate coin deductions. Instead, `popularApi.claimReward` sends only the user's intent (`brandSlug: 'popular-electricals-qatar'`, `rewardId`, `phone`, `userId`) to `POST /api/coupons/claim`. The backend verifies the player's lifetime earned coins from PostgreSQL `GameSession` records, calculates available balance, generates the cryptographically unique coupon code (`PET-XXXX-QAT`), saves the record as `PENDING`, and returns the created coupon along with the new remaining balance.
+  - **Player Active Pending Vouchers**: Added `popularApi.getPendingVouchers` (`GET /api/coupons/pending?brand=...&phone=...`). Only shows pending/active vouchers with barcodes; once redeemed by cashier, coupons automatically disappear from player view.
+  - **Cashier Redemption Table in Dashboard**: In `DashboardRewards.tsx`, added a live "Customer Store Coupons & Redemption" management table with filter tabs (`Pending`, `Redeemed`, `All`), displaying unique coupon codes (`PET-XXXX-QAT`), customer name, phone, redeemed coins, and a one-click **"Redeem Coupon"** cashier action calling `POST /api/coupons/redeem`.
+  - Passed `npx tsc --noEmit` with zero errors.
+* [x] **Milestone 77**: Full Backend Server Authority Alignment (`5d672e3`).
+  - Connected zero-trust claim intent (`brandSlug`, `rewardId`, `phone`, `userId`) against `POST /api/coupons/claim`.
+  - Added pending vouchers retrieval (`GET /api/coupons/pending`) and cashier redemption table in `/dashboard` (`POST /api/coupons/redeem`).
+* [x] **Milestone 78**: Official Reward Coin Scheme Restoration.
+  - Set the exact merchandise reward costs and individual item IDs requested:
+    - `rw_keychain`: **1,000 Coins** → Keychain
+    - `rw_pen`: **1,500 Coins** → Pen
+    - `rw_cap`: **1,500 Coins** → Cap
+    - `rw_diary`: **2,000 Coins** → Diary
+    - `rw_diary_box`: **4,000 Coins** → Diary Box
+    - `rw_watch`: **6,000 Coins** → Watch
+    - `rw_shirt`: **8,000 Coins** → T-Shirt
+    - `pop-reward-surprise-lulu`: In-Game LuLu 100 QAR Voucher Surprise Gift
+  - Validated with `npx tsc --noEmit` (0 errors).
+* [x] **Milestone 79**: Clean Voucher Details Modal, Repeatable Claims & Floating Animated Homepage Reward Button.
+  - **Clean Voucher Dialog (`VoucherDetailsModal.tsx`)**: Removed the simulated barcode entirely. Cleanly displays the Official Reward Code (`PET-XXXX-QAT`), Customer Name, Phone Number, Coins Used (`🪙 X,XXX Coins`), and Redemption Status. Includes tab switching if a player holds multiple active vouchers.
+  - **Repeatable Claims UI**: Restored the classic claim button behavior in `RewardsModal.tsx`. If a user accumulates enough coins, they can claim the same reward repeatedly without being locked out by a "View" button.
+  - **"Your Claimed Rewards" Section**: Added an active vouchers drawer directly below the instructions in the Rewards tab with clickable cards to inspect any active voucher.
+  - **Homepage Floating Pulsing & Shaking Button**: Added `.home-floating-reward-pill` to `HomeScreen.tsx` that floats, pulses, and shakes at the bottom-right whenever the player holds active pending vouchers (`activeVouchers.length > 0`), opening the coupon details immediately when clicked.
+  - Verified with `npx tsc --noEmit` (0 errors).
+* [x] **Milestone 80**: Spendable Total Score & Leaderboard Coin Deduction Mechanism.
+  - Clarified and implemented the spendable leaderboard mechanism: whenever a player redeems a reward (e.g. 1,000 for Keychain), their `totalScore` decreases on both their profile and the All-Time Leaderboard.
+  - Updated `getAllTimeLeaderboard` in `popularApi.ts` to deduct `totalClaimedDeduction` from the player's cumulative score so their leaderboard rank drops accordingly. If their score reaches 0, their rank becomes unranked (`RANK —`) until they play more runs and collect fresh coins.
+  - Formulated backend instructions for `GET /api/leaderboard/all-time` SQL aggregation so PostgreSQL ranks players by net spendable points (`SUM(GameSession.score) - SUM(RewardCoupon.redeemedCoins)`).
+* [x] **Milestone 81**: Weekly Leaderboard Sunday 12:00 AM Qatar Time Reset & Live Time Left Prize Banner.
+  - Aligned the weekly competition reset strictly to **Sunday 12:00 AM Qatar Time (AST, UTC+3)** (= Saturday 21:00 UTC).
+  - Added `getQatarWeeklyCycle()` in [popularApi.ts](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/services/popularApi.ts) calculating exact live ms, days, hours, minutes, and seconds until the next Qatar Sunday reset.
+  - Added a prominent live-updating banner in [LeaderboardModal.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/LeaderboardModal.tsx) (`.smooth-lb-weekly-banner`) on the **Weekly** tab displaying:
+    - Pulsing red dot with `WEEKLY CHAMPION RACE`.
+    - Live countdown pill: `⏱️ Xd Xh Xm left` (updating every second).
+    - Gift badge: `🎁 Weekly #1 Grand Prize: PET Gift Bag with T-Shirt, Watch and Book Case`.
+  - Added modern glassmorphic styling and subtle micro-animations in [global.css](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/styles/global.css).
+  - Validated cleanly with `npx tsc --noEmit` (0 errors).
+* [x] **Milestone 82**: Dashboard Rewards Overhaul — Search Toolbar & Modern Card Grid.
+  - Removed outdated hardcoded mock tables (`MOCK_WEEKLY_WINNERS` and `MOCK_SPECIAL_GIFT_WINNERS`) from [DashboardRewards.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/dashboard/DashboardRewards.tsx).
+  - Converted the plain table layout into a responsive grid of interactive reward cards (`.pet-coupon-cards-grid`, `.pet-coupon-card`).
+  - Implemented real-time search filtering across **Customer Name**, **Phone Number**, **Reward ID** (e.g. `rw_keychain`), and **Voucher Code** (e.g. `PET-XXXX-QAT`).
+  - Added visual states for `PENDING` (rose border, prominent red voucher code, and 1-click Cashier "Mark as Redeemed" button) vs. `REDEEMED` (soft gray chassis with completed timestamp badge).
+* [x] **Milestone 83**: Live Weekly Winners API Integration & Champion Highlight Banner.
+  - Tested and connected backend endpoint `GET /api/leaderboard/weekly/winners?brand=popular-electricals-qatar`. Verified the live demo record in PostgreSQL (`hussain`, 1,250 points, `18 Oct - 24 Oct 2026`).
+  - Added typed interface `WeeklyWinnerRecord` and `fetchWeeklyWinners()` function in [popularApi.ts](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/services/popularApi.ts).
+  - Wired `getPreviousWeeklyWinners()` to fetch from the live database endpoint with graceful fallback for offline/preview environments.
+  - Added amber champion card (`.smooth-champion-highlight-card`) to the Weekly tab in [LeaderboardModal.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/LeaderboardModal.tsx) showcasing `🏆 Last Week's Champion (18 Oct - 24 Oct 2026)` with winner name, prize title, and winning score (`1,250 PTS`).
+* [x] **Milestone 85**: SweetAlert2 Integration for Cashier Redemption.
+  - Installed `sweetalert2` dependency.
+  - Replaced native `window.confirm` and `alert` in [DashboardRewards.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/dashboard/DashboardRewards.tsx) with branded SweetAlert2 dialogs:
+    - **Confirmation Modal**: Detailed card displaying the Voucher Code, Reward Item, Customer Name, and Customer Phone with Popular Red confirm button (`✓ Yes, Mark Redeemed`) and Cancel option.
+    - **Success Toast**: Auto-dismissing success alert with a 3-second progress timer confirming redemption.
+    - **Error Alert**: Graceful error handling dialog if network or server updates fail.
+* [x] **Milestone 86**: 3D LuLu 100 QAR In-Game Special Coupon Pickup.
+  - Built custom 3D [LuluGiftPickup.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/game/LuluGiftPickup.tsx) component integrated into the Three.js runner scene:
+    - **Visuals**: Procedural red card chassis with gold borders, cutline notch, bold `PET GIFT SPECIAL` brand logo, and `LuLu 100 QAR SHOPPING VOUCHER` insignia.
+    - **Dynamic Animations**: Continuous Y-axis 3D rotation, subtle multi-axis wobble tilt, energetic high-frequency tremor/shake (`sin(8t)`), floating elevation bounce, and counter-rotating golden starburst light rays (`raysMat` with additive blending).
+    - **Aura**: Expanding pulsing golden energy ring on the ground.
+  - **Dynamic Backend Pacing**: Removed temporary start placement. The 3D LuLu voucher now only renders when the backend explicitly authorizes `sessionRes.luluGift.eligible === true` at the backend-dictated distance (e.g. $700\text{m}$) with its single-use `voucherToken`.
+  - **Single Winner Per Week Enforcement**: Guaranteed strictly one winner per week by backend transaction locking (`POST /api/rewards/claim-lulu` in `WeeklySpecialGift`).
+* [x] **Milestone 87**: Homescreen Polish — Non-Editable Profile Badge & Clean Camera Icon.
+  - Removed the pencil icon (`✏️`) from the player badge in [HomeScreen.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/HomeScreen.tsx).
+  - Locked player profile identity after initial registration (prevents tampering or arbitrary name edits).
+  - Replaced the generic emoji (`📷`) on the "You have no lives left, click to scan token" CTA pill with a crisp, modern SVG camera icon.
+  - Validated cleanly with `npx tsc --noEmit` (0 errors).
+* [x] **Milestone 88**: Professional Vector SVG Icons across Admin Dashboard.
+  - Replaced all raw unicode emojis with crisp, lightweight SVG icons in [DashboardIcons.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/dashboard/DashboardIcons.tsx):
+    - `IconCoin`: Clean coin vector replacing `🪙` in player score tables, game session history modals, and coupon coin chips.
+    - `IconTicket`: Ticket voucher vector replacing `🎟️` in empty-state coupon notifications.
+    - `IconRefresh`: Circular arrows vector replacing `↻` on refresh action buttons and loading states.
+    - `IconSearch`: Magnifying glass vector replacing `🔍` in coupon search toolbars.
+    - `IconGift`: Gift box vector replacing `🎁` on coupon card headers.
+    - `IconAlert`: Warning triangle/circle vector replacing `⚠️` in admin authentication alert gates.
+  - Checked [DashboardRewards.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/dashboard/DashboardRewards.tsx), [DashboardPlayers.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/dashboard/DashboardPlayers.tsx), [PlayerDetailsModal.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/dashboard/PlayerDetailsModal.tsx), and [AdminLoginModal.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/dashboard/AdminLoginModal.tsx).
+* [x] **Milestone 89**: Removed Duplicate Champion Card from Leaderboard View.
+  - Removed the Last Week's Champion highlight card (`.smooth-champion-highlight-card`) from [LeaderboardModal.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/LeaderboardModal.tsx), streamlining the view so only the clean Weekly Countdown & Prize Banner and Top 3 Podium are visible.
+  - Preserved past weekly champion records in [RewardsModal.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/RewardsModal.tsx) where store merchandise and weekly prizes belong.
+  - Verified with `npx tsc --noEmit` (0 errors).
 
 ---
 
 ## 7. Immediate Next Steps / Roadmap
 
-1. **In-Game LuLu 100 Riyal Voucher Pickup**:
-   - Spawn a special rare 3D voucher pickup item along the track during runs that rewards the LuLu coupon when collected.
+1. **Production Monitoring**:
+   - Monitor live player sessions during weekly cycles as the dynamic curve triggers the LuLu voucher pickup.
 2. **Weekly High Scorer Automation**:
    - Schedule or query the top weekly scorer for the PET Gift Bag award.
 

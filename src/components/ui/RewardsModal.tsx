@@ -7,6 +7,7 @@ import type {
 } from '../../types/customer';
 import { popularApi, POPULAR_BRAND_REWARDS } from '../../services/popularApi';
 import { useGameState } from '../../game/state';
+import { VoucherDetailsModal } from './VoucherDetailsModal';
 
 interface RewardsPageProps {
   onBack?: () => void;
@@ -73,15 +74,40 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
   const [isLoadingWinners, setIsLoadingWinners] = useState(false);
   const [activeVoucherModal, setActiveVoucherModal] = useState<ClaimedVoucher | null>(null);
   const [customer, setCustomer] = useState<CustomerProfile | null>(null);
+  const [brandCoins, setBrandCoins] = useState<number | null>(null);
   const [isClaiming, setIsClaiming] = useState<string | null>(null);
 
   const totalSessionCoins = useGameState((s) => s.coins);
-  const userCoins = Math.max(customer?.totalCoins ?? 0, totalSessionCoins);
+  // Authoritative available spendable coins (decremented upon each reward claim)
+  const userCoins = typeof customer?.totalCoins === 'number'
+    ? customer.totalCoins
+    : (brandCoins !== null ? brandCoins : Math.max(customer?.totalScore ?? 0, totalSessionCoins));
 
   useEffect(() => {
     let isMounted = true;
-    setCustomer(popularApi.getCustomerProfile());
-    setVouchers(popularApi.getClaimedVouchers());
+    const profile = popularApi.getCustomerProfile();
+    setCustomer(profile);
+
+    // Sync live player brand stats for accurate coin balance
+    if (profile) {
+      popularApi
+        .getPlayerBrandStats(profile.id || profile.phone, 'popular-electricals-qatar')
+        .then((stats) => {
+          if (isMounted) {
+            setBrandCoins(stats.totalPoints || stats.totalScore || 0);
+          }
+        })
+        .catch(() => {
+          /* ignore */
+        });
+    }
+
+    // Load active/pending vouchers from backend/local (excludes already redeemed ones)
+    popularApi.getPendingVouchers('popular-electricals-qatar').then((pending) => {
+      if (isMounted) {
+        setVouchers(pending);
+      }
+    });
 
     setIsLoadingWinners(true);
     popularApi
@@ -104,16 +130,26 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
   const handleClaim = async (reward: BrandReward) => {
     setIsClaiming(reward.id);
     try {
-      const voucher = await popularApi.claimReward(reward.id);
-      const updatedVouchers = popularApi.getClaimedVouchers();
-      setVouchers(updatedVouchers);
+      const voucher = await popularApi.claimReward(reward.id, 'popular-electricals-qatar');
+      // Refresh pending vouchers and customer coin balance
+      const updatedPending = await popularApi.getPendingVouchers('popular-electricals-qatar');
+      setVouchers(updatedPending);
+      const updatedProfile = popularApi.getCustomerProfile();
+      setCustomer(updatedProfile);
+      if (updatedProfile) {
+        const stats = await popularApi.getPlayerBrandStats(
+          updatedProfile.id || updatedProfile.phone,
+          'popular-electricals-qatar'
+        );
+        setBrandCoins(stats.totalPoints || stats.totalScore || 0);
+      }
 
       const updatedGroups = await popularApi.getPreviousWeeklyWinners();
       setWeeklyWinners(updatedGroups);
 
       setActiveVoucherModal(voucher);
-    } catch {
-      // Error claiming
+    } catch (err: any) {
+      alert(err.message || 'Unable to claim reward. Please try again.');
     } finally {
       setIsClaiming(null);
     }
@@ -169,9 +205,41 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
         {/* Content Area - Tab 1: Redeem Rewards with Points & Progress Bar */}
         {activeTab === 'rewards' && (
           <div className="smooth-rewards-list">
-            {rewards.map((item) => {
-              const isClaimed = vouchers.some((v) => v.rewardId === item.id);
+            {/* 1. Active Claimed Coupons Section (If any pending vouchers exist) */}
+            {vouchers.length > 0 && (
+              <div className="rewards-active-coupons-panel">
+                <div className="rewards-active-panel-header">
+                  <span className="rewards-active-panel-title">🎁 Your Claimed Rewards ({vouchers.length})</span>
+                  <span className="rewards-active-panel-hint">Tap any coupon to view details for cashier</span>
+                </div>
+                <div className="rewards-active-coupons-grid">
+                  {vouchers.map((v) => (
+                    <button
+                      key={v.id || v.voucherCode}
+                      type="button"
+                      className="rewards-active-coupon-card"
+                      onClick={() => setActiveVoucherModal(v)}
+                    >
+                      <div className="active-coupon-card-top">
+                        <span className="active-coupon-title">{v.rewardTitle}</span>
+                        <span className="active-coupon-status-tag">PENDING</span>
+                      </div>
+                      <div className="active-coupon-code-row">
+                        <code>{v.voucherCode}</code>
+                        <span className="active-coupon-open-arrow">➔</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
+            {/* Claiming Instructions & Catalogue */}
+            <div className="rewards-instructions-strip">
+              <span>Collect coins during your runs to redeem merchandise rewards. Once redeemed, present the voucher code in-store!</span>
+            </div>
+
+            {rewards.map((item) => {
               // LuLu 100 Riyal Surprise Gift found inside the game itself
               if (item.isSurprise) {
                 return (
@@ -208,9 +276,7 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
               return (
                 <div
                   key={item.id}
-                  className={`smooth-reward-card ${
-                    isClaimed ? 'claimed' : isEligible ? 'ready' : 'locked'
-                  }`}
+                  className={`smooth-reward-card ${isEligible ? 'ready' : 'locked'}`}
                 >
                   <div className="smooth-reward-info">
                     <div className="smooth-reward-header-row">
@@ -229,24 +295,15 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
                     </div>
                   </div>
 
+                  {/* Claim Button: Stays Claimable again and again if user has enough coins */}
                   <div className="smooth-reward-action">
-                    {isClaimed ? (
-                      <button
-                        type="button"
-                        className="smooth-reward-btn btn-view"
-                        onClick={() => {
-                          const v = vouchers.find((vch) => vch.rewardId === item.id);
-                          if (v) setActiveVoucherModal(v);
-                        }}
-                      >
-                        View ✓
-                      </button>
-                    ) : isEligible ? (
+                    {isEligible ? (
                       <button
                         type="button"
                         className="smooth-reward-btn btn-claim"
                         disabled={isClaiming === item.id}
                         onClick={() => handleClaim(item)}
+                        title={`Claim ${item.title} for ${item.requiredCoins.toLocaleString()} coins`}
                       >
                         {isClaiming === item.id ? 'Claiming...' : 'Claim'}
                       </button>
@@ -320,78 +377,14 @@ export function RewardsPage({ onBack, onClose }: RewardsPageProps) {
           </button>
         </div>
 
-        {/* Cashier Barcode Dialog Modal */}
+        {/* Standalone Clean Voucher Dialog (No Barcode, shows Name, Phone, Code, Score used) */}
         {activeVoucherModal && (
-          <div
-            className="voucher-overlay-backdrop"
-            onClick={() => setActiveVoucherModal(null)}
-          >
-            <div
-              className="voucher-modal-dialog"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="voucher-modal-header">
-                <div className="voucher-dialog-badge">OFFICIAL STORE VOUCHER</div>
-                <button
-                  type="button"
-                  className="home-modal-close-btn"
-                  onClick={() => setActiveVoucherModal(null)}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="voucher-dialog-body">
-                <div className="voucher-dialog-discount">{activeVoucherModal.discountValue}</div>
-                <div className="voucher-dialog-title">{activeVoucherModal.rewardTitle}</div>
-
-                <div className="voucher-code-box">
-                  <div className="voucher-code-label">VOUCHER CODE</div>
-                  <div className="voucher-code-text">{activeVoucherModal.voucherCode}</div>
-                </div>
-
-                {/* Simulated Barcode for Checkout */}
-                <div className="voucher-barcode-container">
-                  <div className="voucher-barcode-lines">
-                    {Array.from({ length: 36 }).map((_, i) => (
-                      <span
-                        key={i}
-                        className="barcode-bar"
-                        style={{
-                          width: `${(i % 3) + 1.5}px`,
-                          marginRight: `${(i % 2) + 1.2}px`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div className="voucher-barcode-digits">{activeVoucherModal.voucherCode}</div>
-                </div>
-
-                <div className="voucher-verification-card">
-                  <div className="verification-row">
-                    <span className="verif-label">Customer:</span>
-                    <span className="verif-val">{activeVoucherModal.customerName || customer?.name || 'Customer'}</span>
-                  </div>
-                  <div className="verification-row">
-                    <span className="verif-label">Phone:</span>
-                    <span className="verif-val highlight">{activeVoucherModal.customerPhone}</span>
-                  </div>
-                </div>
-
-                <p className="voucher-instructions">
-                  📍 Present this screen at any Popular Electricals branch in Qatar to redeem.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className="voucher-close-action-btn"
-                onClick={() => setActiveVoucherModal(null)}
-              >
-                DONE
-              </button>
-            </div>
-          </div>
+          <VoucherDetailsModal
+            voucher={activeVoucherModal}
+            allVouchers={vouchers}
+            onSelectVoucher={(v) => setActiveVoucherModal(v)}
+            onClose={() => setActiveVoucherModal(null)}
+          />
         )}
       </div>
     </div>

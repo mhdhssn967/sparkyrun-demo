@@ -8,6 +8,7 @@ export function ScoreDisplay() {
   const magnetActive = useGameState((s) => s.magnetActive);
   const turboTime = useGameState((s) => s.turboTime);
   const turboActive = useGameState((s) => s.turboActive);
+  const luluToast = useGameState((s) => s.luluToast);
   const [pulse, setPulse] = useState(false);
   const prevCoins = useRef(coins);
 
@@ -23,6 +24,17 @@ export function ScoreDisplay() {
 
   return (
     <div className="gameplay-hud-container">
+      {/* In-Game Golden LuLu Pickup Celebration Toast */}
+      {luluToast && (
+        <div className="hud-lulu-celebration-toast">
+          <div className="hud-lulu-toast-icon">🎁</div>
+          <div className="hud-lulu-toast-content">
+            <div className="hud-lulu-toast-badge">WEEKLY SPECIAL PRIZE COLLECTED!</div>
+            <div className="hud-lulu-toast-title">LuLu 100 QAR Shopping Voucher</div>
+            <div className="hud-lulu-toast-code">Code: {luluToast}</div>
+          </div>
+        </div>
+      )}
       {/* Top Left: Sparky Profile Pill */}
       <div className="hud-profile-pill">
         <div className="hud-avatar-circle">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { LeaderboardEntry } from '../../types/customer';
-import { popularApi } from '../../services/popularApi';
+import { popularApi, getQatarWeeklyCycle } from '../../services/popularApi';
 
 interface LeaderboardPageProps {
   onBack?: () => void;
@@ -85,6 +85,16 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
   const [activeTab, setActiveTab] = useState<'weekly' | 'all_time'>('weekly');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [weeklyTimeLeft, setWeeklyTimeLeft] = useState<string>(() => getQatarWeeklyCycle().formattedTimeLeft);
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      setWeeklyTimeLeft(getQatarWeeklyCycle().formattedTimeLeft);
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -159,6 +169,29 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
             All time
           </button>
         </div>
+
+        {/* Weekly Countdown & Prize Banner (Only on Weekly tab) */}
+        {activeTab === 'weekly' && (
+          <div className="smooth-lb-weekly-banner">
+            <div className="smooth-lb-weekly-header">
+              <div className="smooth-lb-weekly-badge">
+                <span className="smooth-lb-pulsing-dot" />
+                <span>WEEKLY CHAMPION RACE</span>
+              </div>
+              <div className="smooth-lb-timer-pill" title="Resets Sunday at 12:00 AM Qatar Time (AST)">
+                <span className="smooth-lb-timer-icon">⏱️</span>
+                <span className="smooth-lb-timer-val">{weeklyTimeLeft} left</span>
+              </div>
+            </div>
+            <div className="smooth-lb-weekly-reward">
+              <span className="smooth-lb-gift-icon">🎁</span>
+              <div className="smooth-lb-reward-text">
+                <span className="smooth-lb-reward-label">Weekly #1 Grand Prize:</span>
+                <span className="smooth-lb-reward-title">PET Gift Bag with T-Shirt, Watch and Book Case</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content Area */}
         {isLoading ? (

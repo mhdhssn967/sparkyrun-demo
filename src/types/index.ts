@@ -86,6 +86,16 @@ export interface PowerupItem {
   collectAnim: number;
 }
 
+export interface LuluGiftItem {
+  id: number;
+  lane: Lane;
+  d: number;
+  y: number;
+  collected: boolean;
+  collectAnim: number;
+  voucherToken?: string;
+}
+
 /** Mutable per-frame simulation state (kept out of React for performance). */
 export interface RuntimeState {
   /** Total distance travelled (never reset, so the world never pops). */
@@ -115,5 +125,6 @@ export interface RuntimeState {
   crystals: Crystal[];
   magnets: MagnetItem[];
   powerups: PowerupItem[];
+  luluGifts: LuluGiftItem[];
 }
 

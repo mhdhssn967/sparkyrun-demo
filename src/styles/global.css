@@ -2879,8 +2879,40 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   font-family: monospace;
 }
 
+.verif-val.coins-highlight {
+  color: #D97706;
+  font-weight: 800;
+}
+
 .verif-val.active-status {
   color: #059669;
+}
+
+.voucher-multi-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.voucher-tab-chip {
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.voucher-tab-chip.active {
+  background: #ED1C24;
+  color: #FFFFFF;
+  border-color: #ED1C24;
 }
 
 .voucher-instructions {
@@ -2907,6 +2939,207 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
 .voucher-close-action-btn:hover {
   transform: scale(1.02);
   box-shadow: 0 6px 18px rgba(237, 28, 36, 0.45);
+}
+
+/* -------------------------------------------------------------
+   Active Claimed Rewards Panel in Rewards Page
+   ------------------------------------------------------------- */
+.rewards-active-coupons-panel {
+  background: linear-gradient(135deg, #FFF5F5 0%, #FFFFFF 100%);
+  border: 1.5px solid rgba(237, 28, 36, 0.3);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(237, 28, 36, 0.08);
+}
+
+.rewards-active-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.rewards-active-panel-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ED1C24;
+}
+
+.rewards-active-panel-hint {
+  font-size: 11px;
+  color: #64748B;
+}
+
+.rewards-active-coupons-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rewards-active-coupon-card {
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  border: 1px solid #FEE2E2;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.rewards-active-coupon-card:hover {
+  border-color: #ED1C24;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(237, 28, 36, 0.15);
+}
+
+.active-coupon-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.active-coupon-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.active-coupon-status-tag {
+  background: #FEF3C7;
+  color: #B45309;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.active-coupon-code-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.active-coupon-code-row code {
+  color: #ED1C24;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.active-coupon-open-arrow {
+  font-size: 12px;
+  color: #ED1C24;
+  font-weight: 800;
+}
+
+.rewards-instructions-strip {
+  font-size: 11.5px;
+  color: #64748B;
+  background: #F8FAFC;
+  border: 1px dashed #E2E8F0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+
+/* -------------------------------------------------------------
+   Homepage Floating Pulsing & Shaking Reward Button
+   ------------------------------------------------------------- */
+.home-floating-reward-pill {
+  position: fixed;
+  bottom: 22px;
+  right: 18px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFF5F5 100%);
+  border: 2px solid #ED1C24;
+  border-radius: 9999px;
+  padding: 8px 16px 8px 12px;
+  box-shadow:
+    0 8px 24px rgba(237, 28, 36, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto;
+}
+
+.floating-reward-gift-icon {
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 2px 4px rgba(237, 28, 36, 0.3));
+}
+
+.floating-reward-text-col {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.floating-reward-badge-tag {
+  font-size: 9.5px;
+  font-weight: 900;
+  color: #ED1C24;
+  letter-spacing: 0.8px;
+}
+
+.floating-reward-title-txt {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0F172A;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.floating-reward-arrow {
+  color: #ED1C24;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+/* Floating Moving Up & Shaking Animation */
+.floating-reward-animate {
+  animation: floatAndShake 3s ease-in-out infinite;
+}
+
+@keyframes floatAndShake {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  20% {
+    transform: translateY(-8px) rotate(-3deg) scale(1.03);
+  }
+  25% {
+    transform: translateY(-10px) rotate(3deg) scale(1.05);
+  }
+  30% {
+    transform: translateY(-8px) rotate(-3deg) scale(1.05);
+  }
+  35% {
+    transform: translateY(-10px) rotate(2deg) scale(1.04);
+  }
+  40% {
+    transform: translateY(-8px) rotate(0deg) scale(1.02);
+  }
+  60% {
+    transform: translateY(-2px) rotate(0deg) scale(1);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
 }
 
 /* Live Community Claims Feed */
@@ -3989,6 +4222,271 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   color: #FFFFFF;
   box-shadow: 0 4px 14px rgba(237, 28, 36, 0.35);
   font-weight: 700;
+}
+
+/* Weekly Race & Prize Banner */
+.smooth-lb-weekly-banner {
+  background: linear-gradient(135deg, #FFF1F2 0%, #FFF7ED 100%);
+  border: 1.5px solid #FECDD3;
+  border-radius: 18px;
+  padding: 12px 14px;
+  margin-top: -12px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 14px rgba(237, 28, 36, 0.08);
+  animation: fadeInDown 0.28s ease;
+}
+
+.smooth-lb-weekly-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.smooth-lb-weekly-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #BE123C;
+  letter-spacing: 0.6px;
+}
+
+.smooth-lb-pulsing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #E11D48;
+  box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7);
+  animation: pulseDot 1.6s infinite;
+}
+
+@keyframes pulseDot {
+  0% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(225, 29, 72, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0);
+  }
+}
+
+.smooth-lb-timer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #FFFFFF;
+  border: 1px solid #FDA4AF;
+  border-radius: 9999px;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #9F1239;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.smooth-lb-timer-icon {
+  font-size: 12px;
+}
+
+.smooth-lb-timer-val {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+.smooth-lb-weekly-reward {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #FFFFFF;
+  border: 1px solid #FFE4E6;
+  border-radius: 12px;
+  padding: 8px 12px;
+}
+
+.smooth-lb-gift-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(237, 28, 36, 0.2));
+  animation: rewardPulse 2s ease-in-out infinite;
+}
+
+.smooth-lb-reward-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.smooth-lb-reward-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #881337;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.smooth-lb-reward-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.3;
+}
+
+/* Last Week's Champion Highlight Card */
+.smooth-champion-highlight-card {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+  border: 1.5px solid #FCD34D;
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-top: -12px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.15);
+  animation: fadeInDown 0.28s ease;
+}
+
+.smooth-champion-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.smooth-champion-trophy {
+  font-size: 16px;
+  filter: drop-shadow(0 2px 4px rgba(245, 158, 11, 0.3));
+}
+
+.smooth-champion-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #B45309;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.smooth-champion-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #FFFFFF;
+  border: 1px solid #FDE68A;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.smooth-champion-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.smooth-champion-name {
+  font-size: 14.5px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.smooth-champion-reward {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #D97706;
+}
+
+.smooth-champion-score-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.smooth-champion-score-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.smooth-champion-score-val {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #B45309;
+}
+
+/* In-Game Golden LuLu Pickup Celebration Toast */
+.hud-lulu-celebration-toast {
+  position: absolute;
+  top: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(237, 28, 36, 0.95) 0%, rgba(185, 28, 28, 0.95) 100%);
+  border: 2px solid #FCD34D;
+  border-radius: 16px;
+  padding: 10px 18px;
+  box-shadow: 0 8px 24px rgba(237, 28, 36, 0.4), 0 0 16px rgba(252, 211, 77, 0.6);
+  z-index: 200;
+  animation: bounceInDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+}
+
+.hud-lulu-toast-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+  animation: rewardPulse 1.2s infinite ease-in-out;
+}
+
+.hud-lulu-toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.hud-lulu-toast-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #FEF08A;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+.hud-lulu-toast-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #FFFFFF;
+  line-height: 1.2;
+}
+
+.hud-lulu-toast-code {
+  font-size: 12px;
+  font-weight: 700;
+  color: #FDE047;
+  font-family: monospace;
+  letter-spacing: 0.5px;
+}
+
+@keyframes bounceInDown {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30px) scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, 6px) scale(1.04);
+  }
+  100% {
+    transform: translate(-50%, 0) scale(1.0);
+  }
 }
 
 /* Top 3 Podium (Floating Circles + Crown) */
