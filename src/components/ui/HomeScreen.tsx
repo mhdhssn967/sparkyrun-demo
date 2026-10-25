@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { setGameState, runtime } from '../../game/state';
+import { setGameState } from '../../game/state';
 import { resetRunSession } from '../../game/engine';
 import { requestFullscreen } from '../../utils/fullscreen';
 import { PlayButtonHex } from './PlayButtonHex';
@@ -140,11 +140,11 @@ export function HomeScreen() {
     return () => {
       isMounted = false;
     };
-  }, [customer]);
+  }, [customer, activePage]);
 
   const canPlay = Boolean(activeToken && tokenVerification.valid && tokenLives > 0);
 
-  const handlePlayGame = async () => {
+  const handlePlayGame = () => {
     // Enforce mandatory registration before first run
     if (!popularApi.isCustomerRegistered()) {
       setShowRegModal(true);
@@ -157,49 +157,9 @@ export function HomeScreen() {
       return;
     }
 
-    // Start database-authoritative game session (decrements 1 life)
-    const sessionRes = await popularApi.startGameSession(activeToken);
-    if (!sessionRes.success) {
-      setTokenLives(sessionRes.livesRemaining);
-      setShowScannerModal(true);
-      return;
-    }
-
-    // If backend authorized a LuLu gift opportunity for this lucky session, configure on track
-    if (sessionRes.luluGift?.eligible) {
-      const spawnD = sessionRes.luluGift.spawnDistance || 700;
-      runtime.luluGifts = [
-        {
-          id: 77701,
-          lane: 0,
-          d: spawnD,
-          y: 1.25,
-          collected: false,
-          collectAnim: 0,
-          voucherToken: sessionRes.luluGift.voucherToken,
-        },
-      ];
-    } else {
-      runtime.luluGifts = [];
-    }
-
-    setTokenLives(sessionRes.livesRemaining);
+    // Transition to 3D character game start screen without deducting a life
     requestFullscreen();
     resetRunSession();
-    // Re-apply luluGift after reset if eligible
-    if (sessionRes.luluGift?.eligible) {
-      runtime.luluGifts = [
-        {
-          id: 77701,
-          lane: 0,
-          d: sessionRes.luluGift.spawnDistance || 700,
-          y: 1.25,
-          collected: false,
-          collectAnim: 0,
-          voucherToken: sessionRes.luluGift.voucherToken,
-        },
-      ];
-    }
     setGameState({ status: 'menu' });
   };
 
@@ -263,21 +223,6 @@ export function HomeScreen() {
               </span>
             </div>
           </div>
-        </div>
-
-        {/* Top-Right: Active QR Token / Coupon Code Display */}
-        <div className="home-top-token-wrap">
-          {activeToken ? (
-            <div className="home-top-token-badge" title={`Active Coupon Code: ${activeToken}`}>
-              <span className="home-top-token-label">COUPON</span>
-              <span className="home-top-token-code">{activeToken}</span>
-            </div>
-          ) : (
-            <div className="home-top-token-badge home-top-token-empty" title="No coupon scanned">
-              <span className="home-top-token-label">COUPON</span>
-              <span className="home-top-token-none">NO COUPON</span>
-            </div>
-          )}
         </div>
       </header>
 

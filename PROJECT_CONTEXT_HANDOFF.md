@@ -243,6 +243,22 @@ Use this directory map whenever a specific feature or UI component needs changes
     - **Back Sheet Download CTA**: One-click download of the matching `Popular_Sparky_A3_Back_Sheet.pdf` for double-sided showroom printing.
     - **Live Token Audit Table**: Searchable and filterable (`ALL` vs `ACTIVE` vs `SCANNED`) table listing all tokens in the database, attached customer name/phone, and remaining lives.
   - Verified with `npx tsc --noEmit` (0 errors).
+* [x] **Milestone 93**: Secondary Hex Button Height & Thickness Redesign.
+  - **Secondary Hex Buttons (Leaderboard & Rewards)**:
+    - Redesigned the vector SVG geometry in [SecondaryHexButton.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/SecondaryHexButton.tsx): increased aspect ratio and coordinate space from `viewBox="0 0 250 66"` to `viewBox="0 0 250 88"` (+33.3% vertical thickness).
+    - Recalculated all 3D beveled polygon facets, base rims, shadow layers, chisel lines, and gold specular gradients to match the taller profile.
+    - Repositioned and resized the trophy and gift box SVG icons and typography centered vertically at `y="44"`.
+    - In [global.css](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/styles/global.css), increased `.sec-hex-svg` height to `72px` (max-height `80px`), max-width to `195px`, and row width to `390px`.
+  - **Homepage Stats (RANK, BEST, TOTAL) Visibility**:
+    - Resolved vertical viewport overflow and clipping on `.home-page` container by enabling `overflow-y: auto; -webkit-overflow-scrolling: touch;`.
+    - Tightened `.home-hero` vertical rhythm: reduced `gap` from `18px` to `12px`, reduced `.home-top-pet-logo` margins (`margin-top: -10px`, max-width `136px`), and capped `.home-logo-img` height to `max-height: 24vh`.
+    - Guaranteed all hero elements (`.home-hero-stats-row` showing RANK, BEST, and TOTAL cards, Play Button, Lives Left capsule, Scan QR CTA, and Secondary Buttons) are immediately visible without clipping across all viewport heights.
+* [x] **Milestone 96**: Streamlined Run Finished Modal with Transparent Backdrop.
+  - Updated [GameOverScreen.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/GameOverScreen.tsx) and [global.css](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/styles/global.css):
+    - Converted `.gameover-overlay` from opaque red to a translucent dark backdrop (`rgba(17, 24, 39, 0.55)` with `backdrop-filter: blur(8px)`) so the 3D runner track remains visible underneath like a true modal dialog.
+    - Floating white card dialog with Popular Red top bezel (`.gameover-card`), displaying coins collected badge and hearts capsule.
+    - Buttons with SVG icons: chunky 3D gold `RUN AGAIN` button and clean white/red `BACK TO HOME` button.
+  - Validated with `npx tsc --noEmit` (0 errors).
 
 ---
 

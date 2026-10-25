@@ -57,7 +57,7 @@ export const BEND = { x: 0.0016, yBase: -0.0006, yVar: 0.00025 };
 export const CAMERA = { height: 4.4, distance: 8.6, lookAhead: -14, lookHeight: 1.3 };
 
 // ---- Character -------------------------------------------------------------
-export const CHARACTER_URL = '/character.glb';
+export const CHARACTER_URL = '/sparky.glb';
 export const CHARACTER_TARGET_HEIGHT = 2.07;
 /** glTF models usually face +Z; the runner moves toward -Z so rotate by PI. Set to 0 if yours already faces -Z. */
 export const CHARACTER_YAW = Math.PI;

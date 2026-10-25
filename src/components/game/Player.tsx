@@ -17,7 +17,7 @@ function Character({ onModelLoaded }: { onModelLoaded?: () => void }) {
 
   if (available === false || failed) return <PlaceholderCharacter />;
   return (
-    <ErrorBoundary fallback={<PlaceholderCharacter />} label="character.glb">
+    <ErrorBoundary fallback={<PlaceholderCharacter />} label="sparky.glb">
       <Suspense fallback={<PlaceholderCharacter />}>
         <CharacterModel onUnavailable={onUnavailable} onLoaded={onModelLoaded} />
       </Suspense>
