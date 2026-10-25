@@ -29,6 +29,22 @@ export interface QrToken {
   expiresAt?: string;
 }
 
+export interface BrandTokenRecord {
+  id: string;
+  code: string;
+  initialLives: number;
+  livesRemaining: number;
+  status: 'ACTIVE' | 'EXHAUSTED' | 'REVOKED' | string;
+  createdAt: string;
+  updatedAt?: string;
+  user?: {
+    id: string;
+    name: string;
+    phone: string;
+    email?: string;
+  } | null;
+}
+
 export interface GameSession {
   sessionId: string;
   tokenCode: string;

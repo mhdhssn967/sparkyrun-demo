@@ -13,6 +13,7 @@ import type {
   TokenVerificationResult,
   WeeklyWinnersGroup,
   PlayerBrandStats,
+  BrandTokenRecord,
 } from '../types/customer';
 
 const STORAGE_KEY_CUSTOMER = 'popular_customer_profile';
@@ -1889,6 +1890,66 @@ class PopularApiService {
       totalScore: localTotal,
       gamesPlayed: localRunsCount || (localBest > 0 ? 1 : 0),
     };
+  }
+
+  /**
+   * Batch create unique QR tokens in the database
+   */
+  async batchCreateTokens(
+    count: number,
+    brandSlug: string = 'popular-electricals-qatar',
+    prefix: string = 'PET',
+    initialLives: number = 3
+  ): Promise<{ success: boolean; tokens: string[]; count: number }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/brands/${brandSlug}/tokens/batch-create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brandSlug,
+          gameSlug: 'sparky-run',
+          count,
+          prefix,
+          initialLives,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || 'Failed to create tokens');
+      }
+
+      const data = await res.json();
+      return {
+        success: data.success ?? true,
+        tokens: data.tokens || [],
+        count: data.count || data.tokens?.length || 0,
+      };
+    } catch (err: any) {
+      console.error('batchCreateTokens error:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Fetch all tokens for a brand with attached player and status
+   */
+  async getBrandTokens(
+    brandSlug: string = 'popular-electricals-qatar'
+  ): Promise<BrandTokenRecord[]> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/brands/${brandSlug}/tokens`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch tokens');
+      }
+      const data = await res.json();
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.tokens)) return data.tokens;
+      return [];
+    } catch (err) {
+      console.warn('getBrandTokens error:', err);
+      return [];
+    }
   }
 }
 

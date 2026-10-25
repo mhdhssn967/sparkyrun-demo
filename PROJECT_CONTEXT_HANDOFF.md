@@ -224,6 +224,24 @@ Use this directory map whenever a specific feature or UI component needs changes
 * [x] **Milestone 89**: Removed Duplicate Champion Card from Leaderboard View.
   - Removed the Last Week's Champion highlight card (`.smooth-champion-highlight-card`) from [LeaderboardModal.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/LeaderboardModal.tsx), streamlining the view so only the clean Weekly Countdown & Prize Banner and Top 3 Podium are visible.
   - Preserved past weekly champion records in [RewardsModal.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/RewardsModal.tsx) where store merchandise and weekly prizes belong.
+* [x] **Milestone 90**: Updated A3 Front & Back Printing Sheets with New Showroom Artwork.
+  - Replaced the coupon artwork template with `public/QR FRONT.png` (1530 × 1028 px).
+  - Detected and mapped exact coordinates of the new white QR box:
+    - Bounds: $X \in [1006, 1468]$ (Width = 463 px, CenterX = 1237), $Y \in [262, 724]$ (Height = 463 px, CenterY = 493).
+    - QR Code: Scaled to 380 × 380 px, centered at $(1047, 303)$ with 41.5 px uniform quiet zone margins on all sides.
+  - Generated matching front and back print-ready A3 PDFs (297mm × 420mm, 4 cols × 9 rows = 36 coupons each, 69mm × 44.5mm per coupon, 1.2mm gutters, guillotine corner tick marks):
+    - Front sheet: [public/Popular_Sparky_A3_Test_Sheet.pdf](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/public/Popular_Sparky_A3_Test_Sheet.pdf)
+    - Back sheet: [public/Popular_Sparky_A3_Back_Sheet.pdf](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/public/Popular_Sparky_A3_Back_Sheet.pdf) (built using `public/QR TOken back.png`)
+  - Updated in-browser and build script engines: [a3SheetGenerator.ts](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/utils/a3SheetGenerator.ts) and [scripts/generate_portrait_a3_pdf.cjs](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/scripts/generate_portrait_a3_pdf.cjs).
+  - Verified with `npx tsc --noEmit` (0 errors).
+* [x] **Milestone 91**: Dedicated Tokens Page in Admin Dashboard with Dynamic Multi-Page A3 PDF Generator.
+  - Added dedicated **Tokens** navigation tab in [PopularDashboard.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/dashboard/PopularDashboard.tsx) using vector `<IconQrCode />`.
+  - Built comprehensive [DashboardTokens.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/dashboard/DashboardTokens.tsx):
+    - **A3 Page Calculator**: Select number of pages ($1, 2, 5, 10$ or custom up to $20$), calculating exact coupon counts ($N \times 36$).
+    - **Batch Creation Engine**: Communicates with backend `POST /api/brands/:brandSlug/tokens/batch-create` to generate unique `PET-XXXX-YYYY` codes registered in PostgreSQL with 3 initial lives.
+    - **Client-Side High-Res A3 PDF Stamping**: Iterates through each unique token, generates individual $380 \times 380\text{ px}$ QR bitmaps pointing to `https://sparkyrun.gamefaktory.com/?token=PET-XXXX-YYYY&brand=popular-electricals-qatar`, composites them onto `QR FRONT.png` with corner cutting tick marks across multi-page A3 documents, and triggers instant download.
+    - **Back Sheet Download CTA**: One-click download of the matching `Popular_Sparky_A3_Back_Sheet.pdf` for double-sided showroom printing.
+    - **Live Token Audit Table**: Searchable and filterable (`ALL` vs `ACTIVE` vs `SCANNED`) table listing all tokens in the database, attached customer name/phone, and remaining lives.
   - Verified with `npx tsc --noEmit` (0 errors).
 
 ---

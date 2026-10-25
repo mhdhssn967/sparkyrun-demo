@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { DashboardHome } from './DashboardHome';
 import { DashboardPlayers } from './DashboardPlayers';
 import { DashboardRewards } from './DashboardRewards';
+import { DashboardTokens } from './DashboardTokens';
 import { AdminLoginModal } from './AdminLoginModal';
 import {
   IconHome,
   IconUsers,
   IconGift,
+  IconQrCode,
   IconGamepad,
   IconMenu,
   IconLogout,
@@ -21,7 +23,7 @@ export function PopularDashboard({ onBackToGame }: PopularDashboardProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return !!sessionStorage.getItem('gf_admin_token');
   });
-  const [activeTab, setActiveTab] = useState<'home' | 'players' | 'rewards'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'players' | 'rewards' | 'tokens'>('home');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const handleLogout = () => {
@@ -99,6 +101,20 @@ export function PopularDashboard({ onBackToGame }: PopularDashboardProps) {
             </span>
             <span>Rewards</span>
           </button>
+
+          <button
+            type="button"
+            className={`pet-nav-item ${activeTab === 'tokens' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('tokens');
+              setIsMobileOpen(false);
+            }}
+          >
+            <span className="pet-nav-icon">
+              <IconQrCode />
+            </span>
+            <span>Tokens</span>
+          </button>
         </nav>
       </aside>
 
@@ -131,6 +147,7 @@ export function PopularDashboard({ onBackToGame }: PopularDashboardProps) {
               {activeTab === 'home' && 'Home'}
               {activeTab === 'players' && 'Players'}
               {activeTab === 'rewards' && 'Rewards'}
+              {activeTab === 'tokens' && 'Printable QR Tokens'}
             </h1>
           </div>
 
@@ -161,6 +178,7 @@ export function PopularDashboard({ onBackToGame }: PopularDashboardProps) {
           )}
           {activeTab === 'players' && <DashboardPlayers />}
           {activeTab === 'rewards' && <DashboardRewards />}
+          {activeTab === 'tokens' && <DashboardTokens />}
         </main>
       </div>
     </div>
