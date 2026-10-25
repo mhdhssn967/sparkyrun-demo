@@ -66,11 +66,14 @@ function createResources() {
   texA.colorSpace = SRGBColorSpace;
   const texB = loader.load(BANNER_TEXTURES.bannerB);
   texB.colorSpace = SRGBColorSpace;
+  const texFlag = loader.load(BANNER_TEXTURES.flagQatar);
+  texFlag.colorSpace = SRGBColorSpace;
 
   const bannerGeometry = new PlaneGeometry(1, 1);
   const bannerMaterials: Record<BannerKind, Material> = {
     bannerA: createBannerMaterial(texA, 'bend-banner-a'),
     bannerB: createBannerMaterial(texB, 'bend-banner-b'),
+    flagQatar: createBannerMaterial(texFlag, 'bend-flag-qatar'),
   };
 
   return {
@@ -78,7 +81,7 @@ function createResources() {
     material,
     bannerGeometry,
     bannerMaterials,
-    bannerTextures: [texA, texB] as Texture[],
+    bannerTextures: [texA, texB, texFlag] as Texture[],
   };
 }
 
@@ -146,7 +149,7 @@ function fillSlot(slot: Slot, worldIndex: number) {
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }
 
-  const bannerCounts: Record<BannerKind, number> = { bannerA: 0, bannerB: 0 };
+  const bannerCounts: Record<BannerKind, number> = { bannerA: 0, bannerB: 0, flagQatar: 0 };
   for (const b of banners) {
     const mesh = slot.bannerMeshes[b.kind];
     const i = bannerCounts[b.kind];

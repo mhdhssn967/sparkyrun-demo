@@ -1,4 +1,4 @@
-import { BANNER_A_ASPECT, BANNER_B_ASPECT, CHUNK_LENGTH as L, COLORS, ROAD_HALF_WIDTH } from './constants';
+import { BANNER_A_ASPECT, BANNER_B_ASPECT, FLAG_QATAR_ASPECT, CHUNK_LENGTH as L, COLORS, ROAD_HALF_WIDTH } from './constants';
 import type { BannerInstance, BannerKind, ChunkInstance, ChunkOutput, InstanceKind } from '../types';
 import { chance, createRng, pick, range } from '../utils/random';
 import type { Rng } from '../utils/random';
@@ -61,7 +61,7 @@ function addFramedBanner(
     depth?: number;
   },
 ) {
-  const aspect = kind === 'bannerA' ? BANNER_A_ASPECT : BANNER_B_ASPECT;
+  const aspect = kind === 'bannerA' ? BANNER_A_ASPECT : kind === 'bannerB' ? BANNER_B_ASPECT : FLAG_QATAR_ASPECT;
   const w = h * aspect;
   const rot: readonly [number, number, number] = [0, ry, 0];
   const nx = Math.sin(ry);
@@ -109,12 +109,12 @@ function addFramedBanner(
 // ---- Hoardings & Banners ----------------------------------------------------
 
 function roadsideHoarding(out: Out, banners: Banners, r: Rng, s: number, z: number) {
-  const isBannerA = chance(r, 0.5);
+  const roll = range(r, 0, 1);
   const x = s * range(r, 8.6, 9.8);
   // Angle inward towards oncoming runner
   const ry = -s * range(r, 0.14, 0.26);
 
-  if (isBannerA) {
+  if (roll < 0.38) {
     // Massive Unipole Billboard (Banner A - 329x263, aspect ~1.25095)
     const h = range(r, 4.8, 6.2);
     const y = range(r, 6.8, 8.2);
@@ -124,7 +124,7 @@ function roadsideHoarding(out: Out, banners: Banners, r: Rng, s: number, z: numb
     cyl(out, x, 0, z, 0.48, poleH, COLORS.charcoal);
 
     addFramedBanner(out, banners, 'bannerA', x, y, z, h, ry, { catwalk: true, lamps: 2 });
-  } else {
+  } else if (roll < 0.72) {
     // Massive Wide Highway Billboard (Banner B - 800x199, aspect ~4.0201)
     const h = range(r, 2.7, 3.6);
     const w = h * BANNER_B_ASPECT;
@@ -139,6 +139,23 @@ function roadsideHoarding(out: Out, banners: Banners, r: Rng, s: number, z: numb
     cyl(out, x + tx * colOffset, 0, z + tz * colOffset, 0.32, poleH, COLORS.charcoal);
 
     addFramedBanner(out, banners, 'bannerB', x, y, z, h, ry, { catwalk: true, lamps: 3 });
+  } else {
+    // Massive Qatar National Flag Display Billboard (flagQatar - aspect 28:11 ~2.545)
+    const h = range(r, 3.2, 4.2);
+    const w = h * FLAG_QATAR_ASPECT;
+    const y = range(r, 6.6, 8.0);
+    const poleH = y - h / 2;
+
+    // Dual white columns with gold base rings
+    const tx = Math.cos(ry);
+    const tz = -Math.sin(ry);
+    const colOffset = w * 0.26;
+    cyl(out, x - tx * colOffset, 0, z - tz * colOffset, 0.3, poleH, COLORS.white);
+    cyl(out, x + tx * colOffset, 0, z + tz * colOffset, 0.3, poleH, COLORS.white);
+    cyl(out, x - tx * colOffset, 0, z - tz * colOffset, 0.45, 0.4, COLORS.gold);
+    cyl(out, x + tx * colOffset, 0, z + tz * colOffset, 0.45, 0.4, COLORS.gold);
+
+    addFramedBanner(out, banners, 'flagQatar', x, y, z, h, ry, { catwalk: true, lamps: 3 });
   }
 }
 
@@ -172,6 +189,29 @@ function roadside(out: Out, banners: Banners, r: Rng) {
       sphere(out, x, h - 0.1, z, 3.0, 0.8, 3.0, COLORS.palm);
       sphere(out, x + range(r, -0.3, 0.3), h + 0.25, z, 1.9, 0.6, 1.9, COLORS.palmLight);
     }
+
+    // Qatar National Flagpoles along the Boulevard
+    for (let i = 0; i < 3; i++) {
+      const z = -(10 + i * 20 + range(r, -1, 1));
+      const x = s * (edge + 0.95);
+      const poleH = 7.8;
+      // White/Silver ceremonial pole with gold sphere finial
+      cyl(out, x, 0, z, 0.16, poleH, COLORS.white);
+      sphere(out, x, poleH + 0.15, z, 0.34, 0.34, 0.34, COLORS.gold);
+      // Ceremonial Qatar flag attached near the top
+      const flagH = 1.35;
+      const flagW = flagH * FLAG_QATAR_ASPECT; // ~3.43m
+      const flagY = poleH - flagH / 2 - 0.3;
+      // Angle flag slightly outward/waving along the road
+      const flagRy = s > 0 ? 0.05 : Math.PI - 0.05;
+      banners.push({
+        kind: 'flagQatar',
+        position: [x + (s > 0 ? flagW / 2 + 0.05 : -flagW / 2 - 0.05), flagY, z],
+        rotation: [0, flagRy, 0],
+        scale: [flagW, flagH, 1],
+      });
+    }
+
     // Roadside hoardings / billboards (halved amount)
     for (const zc of [18, 42]) {
       if (chance(r, 0.45)) {

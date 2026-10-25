@@ -24,7 +24,7 @@ export interface BoxPart {
 
 export type InstanceKind = 'box' | 'cylinder' | 'cone' | 'sphere' | 'lamp';
 
-export type BannerKind = 'bannerA' | 'bannerB';
+export type BannerKind = 'bannerA' | 'bannerB' | 'flagQatar';
 
 export interface BannerInstance {
   kind: BannerKind;

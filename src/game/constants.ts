@@ -73,14 +73,16 @@ export const FALL_STAY_DURATION = 3.0; // Seconds character stays down before sh
 export const CHUNK_CAPACITY = { box: 460, cylinder: 300, cone: 40, sphere: 100, lamp: 80 } as const;
 
 // ---- Banners & Hoardings ---------------------------------------------------
-// Exact aspect ratios: image.png is 329x263, image copy.png is 800x199
+// Exact aspect ratios: image.png is 329x263, image copy.png is 800x199, Qatar flag is 28/11 (~2.545)
 export const BANNER_A_ASPECT = 329 / 263; // ~1.25095057
 export const BANNER_B_ASPECT = 800 / 199; // ~4.02010050
-export const BANNER_KINDS = ['bannerA', 'bannerB'] as const;
-export const BANNER_CAPACITY = { bannerA: 64, bannerB: 64 } as const;
+export const FLAG_QATAR_ASPECT = 28 / 11; // ~2.54545455
+export const BANNER_KINDS = ['bannerA', 'bannerB', 'flagQatar'] as const;
+export const BANNER_CAPACITY = { bannerA: 64, bannerB: 64, flagQatar: 64 } as const;
 export const BANNER_TEXTURES = {
   bannerA: '/bannerimages/image.png',
   bannerB: '/bannerimages/image%20copy.png',
+  flagQatar: '/qatar_flag.png',
 } as const;
 
 // ---- Audio -----------------------------------------------------------------

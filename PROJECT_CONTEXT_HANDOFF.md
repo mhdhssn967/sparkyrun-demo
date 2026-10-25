@@ -253,12 +253,13 @@ Use this directory map whenever a specific feature or UI component needs changes
     - Resolved vertical viewport overflow and clipping on `.home-page` container by enabling `overflow-y: auto; -webkit-overflow-scrolling: touch;`.
     - Tightened `.home-hero` vertical rhythm: reduced `gap` from `18px` to `12px`, reduced `.home-top-pet-logo` margins (`margin-top: -10px`, max-width `136px`), and capped `.home-logo-img` height to `max-height: 24vh`.
     - Guaranteed all hero elements (`.home-hero-stats-row` showing RANK, BEST, and TOTAL cards, Play Button, Lives Left capsule, Scan QR CTA, and Secondary Buttons) are immediately visible without clipping across all viewport heights.
-* [x] **Milestone 96**: Streamlined Run Finished Modal with Transparent Backdrop.
-  - Updated [GameOverScreen.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/ui/GameOverScreen.tsx) and [global.css](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/styles/global.css):
-    - Converted `.gameover-overlay` from opaque red to a translucent dark backdrop (`rgba(17, 24, 39, 0.55)` with `backdrop-filter: blur(8px)`) so the 3D runner track remains visible underneath like a true modal dialog.
-    - Floating white card dialog with Popular Red top bezel (`.gameover-card`), displaying coins collected badge and hearts capsule.
-    - Buttons with SVG icons: chunky 3D gold `RUN AGAIN` button and clean white/red `BACK TO HOME` button.
-  - Validated with `npx tsc --noEmit` (0 errors).
+* [x] **Milestone 97**: Qatar Cultural & National Elements Integrated into 3D World.
+  - Generated authentic high-resolution national flag asset [public/qatar_flag.png](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/public/qatar_flag.png) (exact 28:11 aspect ratio, white serrated 9-point border, and official maroon `#8A1538`).
+  - Added `flagQatar` banner instance kind and textures across [types/index.ts](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/types/index.ts), [constants.ts](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/game/constants.ts), and [Environment.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/game/Environment.tsx).
+  - Integrated in [chunkGenerator.ts](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/game/chunkGenerator.ts):
+    - **Boulevard Ceremonial Flagpoles**: Tall silver flagpoles (7.8m) with golden sphere finials and fluttering Qatar national flags lining both sides of the boulevard.
+    - **Highway Mega-Billboards**: Added grand twin-column Qatar national flag displays alongside commercial brand hoardings.
+  - Successfully validated via full production build `npm run build` (0 TypeScript errors, bundle verified).
 
 ---
 
