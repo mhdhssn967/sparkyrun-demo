@@ -117,7 +117,6 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
   const top1 = entries[0];
   const top2 = entries[1];
   const top3 = entries[2];
-  const remainingEntries = entries.slice(3);
 
   return (
     <div className="smooth-lb-viewport">
@@ -243,35 +242,38 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
               <span className="th-points">{activeTab === 'all_time' ? 'Total / Best' : 'Points'}</span>
             </div>
 
-            {/* List of cards from #4 onwards */}
+            {/* List of cards (including top 3 on stands as well as in the list) */}
             <div className="smooth-lb-list">
-              {remainingEntries.map((entry) => (
-                <div
-                  key={`${entry.customerId}-${entry.rank}`}
-                  className={`smooth-lb-card ${entry.isCurrentUser ? 'current-user-card' : ''}`}
-                >
-                  <span className="smooth-card-rank">{entry.rank}</span>
+              {entries.map((entry) => {
+                const rankClass = entry.rank === 1 ? 'rank-top-1' : entry.rank === 2 ? 'rank-top-2' : entry.rank === 3 ? 'rank-top-3' : '';
+                return (
+                  <div
+                    key={`${entry.customerId}-${entry.rank}`}
+                    className={`smooth-lb-card ${rankClass} ${entry.isCurrentUser ? 'current-user-card' : ''}`}
+                  >
+                    <span className="smooth-card-rank">#{entry.rank}</span>
 
-                  <div className="smooth-card-avatar-initial">
-                    {getInitial(entry.displayName)}
-                  </div>
-
-                  <div className="smooth-card-player-info" style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
-                    <div className="smooth-card-player-name">
-                      {entry.isCurrentUser ? `${entry.displayName} (You)` : entry.displayName}
+                    <div className="smooth-card-avatar-initial">
+                      {getInitial(entry.displayName)}
                     </div>
-                    {activeTab === 'all_time' && typeof entry.gamesPlayed === 'number' && (
-                      <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
-                        {entry.gamesPlayed} {entry.gamesPlayed === 1 ? 'game' : 'games'} played • Best: {entry.bestScore?.toLocaleString() ?? entry.coins.toLocaleString()}
-                      </div>
-                    )}
-                  </div>
 
-                  <span className="smooth-card-points">
-                    {entry.coins.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280' }}>pts</span>
-                  </span>
-                </div>
-              ))}
+                    <div className="smooth-card-player-info" style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+                      <div className="smooth-card-player-name">
+                        {entry.isCurrentUser ? `${entry.displayName} (You)` : entry.displayName}
+                      </div>
+                      {activeTab === 'all_time' && typeof entry.gamesPlayed === 'number' && (
+                        <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+                          {entry.gamesPlayed} {entry.gamesPlayed === 1 ? 'game' : 'games'} played • Best: {entry.bestScore?.toLocaleString() ?? entry.coins.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="smooth-card-points">
+                      {entry.coins.toLocaleString()} <span style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280' }}>pts</span>
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </>
         )}

@@ -106,6 +106,14 @@ export interface AllTimeLeaderboardPlayer {
   userId?: string;
 }
 
+export interface PlayerBrandStats {
+  highestScore: number;
+  bestScore: number;
+  totalPoints: number;
+  totalScore: number;
+  gamesPlayed: number;
+}
+
 export interface LeaderboardEntry {
   rank: number;
   customerId: string;

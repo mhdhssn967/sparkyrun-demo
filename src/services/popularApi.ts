@@ -12,6 +12,7 @@ import type {
   EndSessionResponse,
   TokenVerificationResult,
   WeeklyWinnersGroup,
+  PlayerBrandStats,
 } from '../types/customer';
 
 const STORAGE_KEY_CUSTOMER = 'popular_customer_profile';
@@ -94,7 +95,7 @@ export const POPULAR_BRAND_REWARDS: BrandReward[] = [
     discountValue: 'KEYCHAIN / PEN / CAP',
     terms: 'Claim at Popular Electricals showroom counter with verified SMS/phone confirmation.',
     requiredDistance: 0,
-    requiredCoins: 500,
+    requiredCoins: 800,
     icon: '',
   },
   {
@@ -1365,6 +1366,97 @@ class PopularApiService {
       /* fallback below */
     }
     return null;
+  }
+
+  /**
+   * Fetches personal Highest Score and Cumulative Total Points for the specific brand.
+   * Endpoint: GET ${API_BASE_URL}/api/player/stats?brand=${brandSlug}&phone=${phone} (or userId, or token)
+   */
+  async getPlayerBrandStats(
+    phoneOrUserId?: string,
+    brandSlug = 'popular-electricals-qatar'
+  ): Promise<PlayerBrandStats> {
+    const cust = this.getCustomerProfile();
+    const identifier = phoneOrUserId || cust?.id || cust?.phone || '';
+    const activeToken = this.getActiveToken();
+
+    // Query parameters builder (userId, phone, or token)
+    let queryParam = '';
+    if (identifier.includes('-') && identifier.length === 36) {
+      queryParam = `userId=${encodeURIComponent(identifier)}`;
+    } else if (identifier && identifier.trim().length > 0) {
+      const cleanPhone = identifier.replace(/\D/g, '');
+      queryParam = `phone=${encodeURIComponent(cleanPhone)}`;
+    } else if (activeToken) {
+      queryParam = `token=${encodeURIComponent(activeToken)}`;
+    }
+
+    try {
+      if (queryParam) {
+        const res = await fetch(
+          `${API_BASE_URL}/api/player/stats?brand=${encodeURIComponent(brandSlug)}&${queryParam}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            const highestScore = Number(data.highestScore ?? data.bestScore ?? 0);
+            const totalPoints = Number(data.totalPoints ?? data.totalScore ?? 0);
+            const gamesPlayed = Number(data.gamesPlayed ?? 0);
+
+            // Synchronize with local profile cache
+            if (cust) {
+              cust.bestScore = Math.max(cust.bestScore || 0, highestScore);
+              cust.totalScore = Math.max(cust.totalScore || 0, totalPoints);
+              try {
+                localStorage.setItem(STORAGE_KEY_CUSTOMER, JSON.stringify(cust));
+              } catch {
+                /* ignore */
+              }
+            }
+
+            return {
+              highestScore,
+              bestScore: highestScore,
+              totalPoints,
+              totalScore: totalPoints,
+              gamesPlayed,
+            };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch player brand stats from API:', err);
+    }
+
+    // Fallback: derive from local profile and recorded runs
+    const localBest = cust?.bestScore || 0;
+    let localTotal = cust?.totalScore || localBest;
+    let localRunsCount = 0;
+
+    try {
+      const runsRaw = localStorage.getItem(STORAGE_KEY_LOCAL_RUNS);
+      if (runsRaw) {
+        const runs = JSON.parse(runsRaw);
+        if (Array.isArray(runs) && runs.length > 0) {
+          localRunsCount = runs.length;
+          const sum = runs.reduce(
+            (acc: number, r: { score?: number }) => acc + (Number(r.score) || 0),
+            0
+          );
+          if (sum > localTotal) localTotal = sum;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
+    return {
+      highestScore: localBest,
+      bestScore: localBest,
+      totalPoints: localTotal,
+      totalScore: localTotal,
+      gamesPlayed: localRunsCount || (localBest > 0 ? 1 : 0),
+    };
   }
 }
 

@@ -4229,6 +4229,30 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   flex-shrink: 0;
 }
 
+.smooth-lb-card.rank-top-1 {
+  border-left: 4px solid #ED1C24;
+}
+
+.smooth-lb-card.rank-top-1 .smooth-card-rank {
+  color: #ED1C24;
+}
+
+.smooth-lb-card.rank-top-2 {
+  border-left: 4px solid #64748B;
+}
+
+.smooth-lb-card.rank-top-2 .smooth-card-rank {
+  color: #475569;
+}
+
+.smooth-lb-card.rank-top-3 {
+  border-left: 4px solid #D97706;
+}
+
+.smooth-lb-card.rank-top-3 .smooth-card-rank {
+  color: #D97706;
+}
+
 .smooth-card-avatar-initial {
   width: 34px;
   height: 34px;

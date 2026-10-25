@@ -77,34 +77,30 @@ export function HomeScreen() {
     let isMounted = true;
     async function loadStats() {
       try {
-        const globalBoard = await popularApi.getGlobalLeaderboard();
         const cust = popularApi.getCustomerProfile();
-        const best = cust?.bestScore || 0;
+        // 1. Fetch brand-scoped player stats (Highest Score, Cumulative Total Points, Games Played)
+        const brandStats = await popularApi.getPlayerBrandStats(
+          cust?.id || cust?.phone,
+          'popular-electricals-qatar'
+        );
+
+        // 2. Fetch All-Time leaderboard to compute accurate rank
+        const globalBoard = await popularApi.getAllTimeLeaderboard('popular-electricals-qatar');
+        const best = brandStats.highestScore;
+        const total = brandStats.totalPoints;
         let rank = 1;
+
         const currentEntry = globalBoard.find((e) => e.isCurrentUser);
         if (currentEntry) {
           rank = currentEntry.rank;
+        } else if (total > 0) {
+          const higherScores = globalBoard.filter((e) => (e.totalScore ?? e.coins) > total).length;
+          rank = higherScores + 1;
         } else if (best > 0) {
-          const higherScores = globalBoard.filter((e) => e.score > best).length;
+          const higherScores = globalBoard.filter((e) => e.coins > best).length;
           rank = higherScores + 1;
         } else {
-          rank = globalBoard.length > 0 ? globalBoard.length : 1;
-        }
-
-        let total = cust?.totalScore || best;
-        try {
-          const runsRaw = localStorage.getItem('popular_local_runs');
-          if (runsRaw) {
-            const runs = JSON.parse(runsRaw);
-            if (Array.isArray(runs) && runs.length > 0) {
-              total = runs.reduce(
-                (sum: number, r: { score?: number }) => sum + (Number(r.score) || 0),
-                0,
-              );
-            }
-          }
-        } catch {
-          /* ignore */
+          rank = globalBoard.length > 0 ? globalBoard.length + 1 : 1;
         }
 
         if (isMounted) {
@@ -159,7 +155,14 @@ export function HomeScreen() {
     setCustomer(profile);
     setShowRegModal(false);
     setIsEditingProfile(false);
-    // User transitions directly to the Home screen (does not auto-start game)
+    // Immediately fetch and update player brand stats for the newly logged in user
+    popularApi.getPlayerBrandStats(profile.id || profile.phone, 'popular-electricals-qatar').then((stats) => {
+      setPlayerStats((prev) => ({
+        ...prev,
+        bestScore: stats.highestScore,
+        totalScore: stats.totalPoints,
+      }));
+    });
   };
 
   // const playerLevel = Math.max(1, Math.min(99, Math.floor((playerStats.bestScore || 0) / 300) + 1));

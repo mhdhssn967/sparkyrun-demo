@@ -27,9 +27,18 @@ export function GameOverScreen() {
     // Submit session completion with coins collected as authoritative score
     popularApi
       .endGameSession(sessionId, coins, coins, durationSeconds)
-      .then((res) => {
+      .then(async (res) => {
         if (isMounted) {
           setSessionResult(res);
+          // Sync brand stats immediately so real-time total points and highest score update
+          try {
+            const cust = popularApi.getCustomerProfile();
+            if (cust) {
+              await popularApi.getPlayerBrandStats(cust.id || cust.phone, 'popular-electricals-qatar');
+            }
+          } catch {
+            /* ignore */
+          }
         }
       })
       .catch(() => {
