@@ -9,6 +9,7 @@ export interface CountryCode {
 export interface CustomerProfile {
   id: string;
   name: string;
+  companyName?: string; // Company / Business Name for B2B client recognition
   countryCode: string; // e.g. "+974"
   phone: string; // e.g. "55123456"
   fullPhone: string; // e.g. "+974 55123456"
@@ -139,6 +140,7 @@ export interface LeaderboardEntry {
   rank: number;
   customerId: string;
   displayName: string;
+  companyName?: string; // Company / Business Name
   maskedPhone: string; // e.g. "+974 55***456"
   score: number;
   coins: number;

@@ -438,6 +438,7 @@ class PopularApiService {
         const profile: CustomerProfile = {
           id: authRes.user.id,
           name: authRes.user.name,
+          companyName: authRes.user.companyName,
           countryCode,
           phone: cleanPhone,
           fullPhone,
@@ -489,19 +490,21 @@ class PopularApiService {
 
   async registerCustomer(params: {
     name: string;
+    companyName?: string;
     countryCode: string;
     phone: string;
     consent: boolean;
   }): Promise<CustomerProfile> {
     const cleanPhone = params.phone.trim().replace(/\D/g, '');
     const fullPhone = `${params.countryCode} ${cleanPhone}`;
+    const cleanCompany = params.companyName?.trim() || undefined;
 
     let backendUserId = `pop_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     let createdAt = new Date().toISOString();
 
     // 1. Register with PostgreSQL backend via Better Auth User schema
     try {
-      const regRes = await registerPlayer(cleanPhone, params.name);
+      const regRes = await registerPlayer(cleanPhone, params.name, cleanCompany);
       if (regRes.success && regRes.user) {
         backendUserId = regRes.user.id;
         if (regRes.user.createdAt) createdAt = regRes.user.createdAt;
@@ -513,6 +516,7 @@ class PopularApiService {
     const profile: CustomerProfile = {
       id: backendUserId,
       name: params.name.trim(),
+      companyName: cleanCompany,
       countryCode: params.countryCode,
       phone: cleanPhone,
       fullPhone,
@@ -631,10 +635,13 @@ class PopularApiService {
                 (item.name && currentProfile.name && item.name.trim().toLowerCase() === currentProfile.name.trim().toLowerCase())
               : false;
 
+            const companyName = item.companyName || (isCurrent ? currentProfile?.companyName : undefined);
+
             return {
               rank: item.rank || idx + 1,
               customerId: item.userId || item.id || `weekly_${idx + 1}`,
               displayName: item.name || 'Anonymous Runner',
+              companyName: companyName || undefined,
               maskedPhone: item.phone ? maskPhoneNumber(item.phone) : '+974 55***000',
               score: Number(item.score) || 0,
               coins: Number(item.score) || 0,
@@ -676,6 +683,7 @@ class PopularApiService {
     return sorted.map((entry, idx) => ({
       ...entry,
       rank: idx + 1,
+      companyName: entry.companyName || (currentProfile && entry.customerId === currentProfile.id ? currentProfile.companyName : undefined),
       isCurrentUser: currentProfile ? entry.customerId === currentProfile.id : entry.customerId === 'guest',
     }));
   }
@@ -703,6 +711,8 @@ class PopularApiService {
                 (item.name && currentProfile.name && item.name.trim().toLowerCase() === currentProfile.name.trim().toLowerCase())
               : false;
 
+            const companyName = item.companyName || (isCurrent ? currentProfile?.companyName : undefined);
+
             // All-Time leaderboard is ranked by cumulative totalScore
             const totalPoints = Number(item.totalScore ?? item.score ?? 0);
             const bestPts = Number(item.bestScore ?? item.score ?? 0);
@@ -711,6 +721,7 @@ class PopularApiService {
               rank: item.rank || idx + 1,
               customerId: item.userId || item.id || `alltime_${idx + 1}`,
               displayName: item.name || 'Anonymous Runner',
+              companyName: companyName || undefined,
               maskedPhone: item.phone ? maskPhoneNumber(item.phone) : '+974 55***000',
               score: totalPoints,
               coins: totalPoints,

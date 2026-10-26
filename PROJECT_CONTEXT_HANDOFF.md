@@ -260,6 +260,33 @@ Use this directory map whenever a specific feature or UI component needs changes
     - **Boulevard Ceremonial Flagpoles**: Tall silver flagpoles (7.8m) with golden sphere finials and fluttering Qatar national flags lining both sides of the boulevard.
     - **Highway Mega-Billboards**: Added grand twin-column Qatar national flag displays alongside commercial brand hoardings.
   - Successfully validated via full production build `npm run build` (0 TypeScript errors, bundle verified).
+* [x] **Milestone 98**: Popular Electricals Product Showcase Branding & WebP Conversion.
+  - Processed and converted all 12 raw showroom product photos in [public/productimages](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/public/productimages) into lightweight, lossless/high-quality WebP files in [public/products](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/public/products):
+    - `cable_reel.webp` (32.0 KB vs 246.9 KB original)
+    - `wall_switches.webp` (10.1 KB vs 144.5 KB original)
+    - `flood_light_400w.webp` (19.1 KB vs 153.5 KB original)
+    - `distribution_boxes.webp` (34.2 KB vs 267.3 KB original)
+    - `conduit_fittings.webp` (21.3 KB vs 213.6 KB original)
+    - `industrial_plugs.webp` (20.7 KB vs 243.8 KB original)
+    - `power_strips.webp` (40.0 KB vs 435.8 KB original)
+    - `metal_exhaust_fans.webp` (29.3 KB vs 241.5 KB original)
+    - `float_switch.webp` (18.2 KB vs 203.5 KB original)
+    - `isolator_switch.webp` (22.7 KB vs 389.0 KB original)
+    - `ventilation_fan.webp` (22.6 KB vs 374.6 KB original)
+    - `flood_light_poster.webp` (47.1 KB vs 166.9 KB original)
+  - Created composite high-resolution $2048 \times 1536$ WebP texture atlas [public/products_atlas.webp](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/public/products_atlas.webp) (only 185 KB total) with branded Popular Red framing headers and sharp product photography.
+  - Built custom `createAtlasBannerMaterial` in [bendMaterial.ts](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/utils/bendMaterial.ts) supporting world bend curvature and dynamic per-instance GPU `aUvOffset` vertex attribute shifts.
+  - **In-Game Obstacle Branding**:
+    - In [Obstacles.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/game/Obstacles.tsx): Equipped all obstacle types (low hurdle barriers, overhead gantries, and parked delivery trucks) with branded Popular Electricals product signboards facing the oncoming runner.
+  - **Roadside Showcase Billboards**:
+    - In [chunkGenerator.ts](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/game/chunkGenerator.ts) & [Environment.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/game/Environment.tsx): Added `productBillboard` to instanced roadside hoardings cycling through all 12 products.
+  - Successfully validated via full production build `npm run build` (0 TypeScript errors, bundle verified).
+* [x] **Milestone 99**: Environment & Obstacle Branding Architecture Refinement.
+  - **Obstacles Kept 100% Clean**: Reverted [Obstacles.tsx](file:///d:/Oqulix/Oqulix%20Projects/GameFaktory/doha-dash/popular-sparky/src/components/game/Obstacles.tsx) to pure obstacle geometry without any decals or stickers on hurdles, gantries, or delivery vans.
+  - **PET Logos on Buildings & Big Billboards**: Modern tower facades, podiums, rooftops, and massive highway unipole billboards exclusively feature the official **PET** branding (`bannerA` and `bannerB`).
+  - **Qatar Flags**: Removed flag billboards so flags only appear naturally as authentic ceremonial flagpoles placed randomly along the roadside boulevard.
+  - **Product Showcase Real-World Side Banners**: Integrated realistic lamppost mounting brackets and vertical banners displaying the 12 Popular Electricals showroom products on street sides, along with dedicated roadside billboards.
+  - **Validation**: Verified with `npx tsc --noEmit` and `npx vite build` (both finished with code 0).
 
 ---
 

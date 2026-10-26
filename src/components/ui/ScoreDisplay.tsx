@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameState } from '../../game/state';
+import { popularApi } from '../../services/popularApi';
 
 export function ScoreDisplay() {
   const coins = useGameState((s) => s.coins);
@@ -11,6 +12,27 @@ export function ScoreDisplay() {
   const luluToast = useGameState((s) => s.luluToast);
   const [pulse, setPulse] = useState(false);
   const prevCoins = useRef(coins);
+
+  // Player Name and Company from registered profile
+  const [playerName, setPlayerName] = useState(() => {
+    const cust = popularApi.getCustomerProfile();
+    return cust?.name || 'Sparky Runner';
+  });
+
+  const [playerCompany, setPlayerCompany] = useState<string | undefined>(() => {
+    const cust = popularApi.getCustomerProfile();
+    return cust?.companyName;
+  });
+
+  useEffect(() => {
+    const cust = popularApi.getCustomerProfile();
+    if (cust?.name) {
+      setPlayerName(cust.name);
+    }
+    if (cust?.companyName) {
+      setPlayerCompany(cust.companyName);
+    }
+  }, []);
 
   useEffect(() => {
     if (coins > prevCoins.current) {
@@ -35,12 +57,12 @@ export function ScoreDisplay() {
           </div>
         </div>
       )}
-      {/* Top Left: Sparky Profile Pill */}
-      <div className="hud-profile-pill">
+      {/* Top Left: Actual Player Profile Pill */}
+      <div className="hud-profile-pill" title={`${playerName}${playerCompany ? ` • ${playerCompany}` : ''}`}>
         <div className="hud-avatar-circle">
           <img
             src="/image.png"
-            alt="Sparky"
+            alt="Sparky Head"
             className="hud-avatar-img"
             width={48}
             height={48}
@@ -48,7 +70,10 @@ export function ScoreDisplay() {
           />
         </div>
         <div className="hud-profile-details">
-          <span className="hud-player-name">Sparky</span>
+          <span className="hud-player-name">{playerName}</span>
+          {playerCompany && (
+            <span className="hud-player-company">{playerCompany}</span>
+          )}
           <div className="hud-hearts-row">
             {Array.from({ length: 3 }).map((_, i) => (
               <svg

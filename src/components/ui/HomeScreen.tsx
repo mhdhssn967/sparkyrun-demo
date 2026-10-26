@@ -222,6 +222,11 @@ export function HomeScreen() {
                 {customer?.name ? customer.name.toUpperCase() : 'SPARKY RUNNER'}
               </span>
             </div>
+            {customer?.companyName && (
+              <span className="home-player-company">
+                {customer.companyName.toUpperCase()}
+              </span>
+            )}
           </div>
         </div>
       </header>
@@ -231,13 +236,13 @@ export function HomeScreen() {
         {/* PET Popular Electricals Logo placed above Sparky Run logo */}
         <div className="home-top-brand">
           <img
-            src="/pet_logo_red.png"
+            src="/pet_logo_white.png"
             alt="PET Popular Electricals & Trading Co. W.L.L"
             className="home-top-pet-logo"
             width={329}
             height={263}
             onError={(e) => {
-              (e.target as HTMLImageElement).src = '/bannerimages/image.png';
+              (e.target as HTMLImageElement).src = '/pet_logo_red.png';
             }}
           />
         </div>

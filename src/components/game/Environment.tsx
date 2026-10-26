@@ -28,6 +28,7 @@ import { generateChunk } from '../../game/chunkGenerator';
 import { runtime } from '../../game/state';
 import type { BannerKind, InstanceKind } from '../../types';
 import {
+  createAtlasBannerMaterial,
   createBannerMaterial,
   createBuildingMaterial,
   createEmissiveMaterial,
@@ -68,12 +69,15 @@ function createResources() {
   texB.colorSpace = SRGBColorSpace;
   const texFlag = loader.load(BANNER_TEXTURES.flagQatar);
   texFlag.colorSpace = SRGBColorSpace;
+  const texAtlas = loader.load(BANNER_TEXTURES.productBillboard);
+  texAtlas.colorSpace = SRGBColorSpace;
 
   const bannerGeometry = new PlaneGeometry(1, 1);
   const bannerMaterials: Record<BannerKind, Material> = {
     bannerA: createBannerMaterial(texA, 'bend-banner-a'),
     bannerB: createBannerMaterial(texB, 'bend-banner-b'),
     flagQatar: createBannerMaterial(texFlag, 'bend-flag-qatar'),
+    productBillboard: createAtlasBannerMaterial(texAtlas, 'bend-banner-atlas'),
   };
 
   return {
@@ -81,7 +85,7 @@ function createResources() {
     material,
     bannerGeometry,
     bannerMaterials,
-    bannerTextures: [texA, texB, texFlag] as Texture[],
+    bannerTextures: [texA, texB, texFlag, texAtlas] as Texture[],
   };
 }
 
@@ -104,7 +108,12 @@ function createSlot(res: ReturnType<typeof createResources>): Slot {
   const bannerMeshes = {} as Record<BannerKind, InstancedMesh>;
   for (const kind of BANNER_KINDS) {
     const cap = BANNER_CAPACITY[kind];
-    const mesh = new InstancedMesh(res.bannerGeometry, res.bannerMaterials[kind], cap);
+    // Each InstancedMesh gets its own clone of bannerGeometry so instance attributes don't collide
+    const geom = res.bannerGeometry.clone();
+    if (kind === 'productBillboard') {
+      geom.setAttribute('aUvOffset', new InstancedBufferAttribute(new Float32Array(cap * 2), 2));
+    }
+    const mesh = new InstancedMesh(geom, res.bannerMaterials[kind], cap);
     mesh.instanceMatrix.setUsage(DynamicDrawUsage);
     mesh.frustumCulled = false;
     mesh.count = 0;
@@ -149,7 +158,7 @@ function fillSlot(slot: Slot, worldIndex: number) {
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }
 
-  const bannerCounts: Record<BannerKind, number> = { bannerA: 0, bannerB: 0, flagQatar: 0 };
+  const bannerCounts: Record<BannerKind, number> = { bannerA: 0, bannerB: 0, flagQatar: 0, productBillboard: 0 };
   for (const b of banners) {
     const mesh = slot.bannerMeshes[b.kind];
     const i = bannerCounts[b.kind];
@@ -159,12 +168,22 @@ function fillSlot(slot: Slot, worldIndex: number) {
     tmpBanner.scale.set(...b.scale);
     tmpBanner.updateMatrix();
     mesh.setMatrixAt(i, tmpBanner.matrix);
+
+    const uvAttr = mesh.geometry.getAttribute('aUvOffset') as InstancedBufferAttribute | undefined;
+    if (uvAttr) {
+      const u = b.uvOffset ? b.uvOffset[0] : 0;
+      const v = b.uvOffset ? b.uvOffset[1] : 0;
+      uvAttr.setXY(i, u, v);
+    }
+
     bannerCounts[b.kind] = i + 1;
   }
   for (const kind of BANNER_KINDS) {
     const mesh = slot.bannerMeshes[kind];
     mesh.count = bannerCounts[kind];
     mesh.instanceMatrix.needsUpdate = true;
+    const uvAttr = mesh.geometry.getAttribute('aUvOffset') as InstancedBufferAttribute | undefined;
+    if (uvAttr) uvAttr.needsUpdate = true;
   }
 
   slot.worldIndex = worldIndex;
@@ -195,7 +214,10 @@ export function Environment() {
       res.bannerTextures.forEach((t) => t.dispose());
       slots.forEach((s) => {
         KINDS.forEach((k) => s.meshes[k].dispose());
-        BANNER_KINDS.forEach((k) => s.bannerMeshes[k].dispose());
+        BANNER_KINDS.forEach((k) => {
+          s.bannerMeshes[k].geometry.dispose();
+          s.bannerMeshes[k].dispose();
+        });
       });
     },
     [res, slots],

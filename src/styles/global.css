@@ -93,12 +93,32 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
 
 .hud-player-name {
   font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: 0.02em;
   line-height: 1.15;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hud-player-company {
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: -1px;
+  margin-bottom: 2px;
 }
 
 .hud-hearts-row {
@@ -2020,6 +2040,20 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.home-player-company {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6B7280;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  font-family: 'Outfit', 'Montserrat', -apple-system, sans-serif;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
 }
 
 .home-player-edit-icon {
@@ -4845,6 +4879,19 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   color: #0F172A;
 }
 
+.smooth-podium-company {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+  margin-top: -2px;
+  margin-bottom: 4px;
+}
+
 .smooth-player-points {
   display: inline-flex;
   align-items: center;
@@ -4984,6 +5031,16 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   overflow: hidden;
   text-overflow: ellipsis;
   padding-right: 10px;
+}
+
+.smooth-card-company {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
 }
 
 .smooth-card-points {
@@ -6226,5 +6283,98 @@ body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color
   border: 1.5px solid #3b82f6;
   color: #1d4ed8;
 }
+
+/* ==========================================================================
+   POPULAR RED SPLASH SCREEN WITH PET LOGO & MINIMAL CLEAN PROGRESS BAR
+   ========================================================================== */
+.popular-splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #ED1C24;
+  color: #ffffff;
+  user-select: none;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+  overflow: hidden;
+}
+
+.popular-splash-screen.splash-fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.splash-center-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  max-width: 360px;
+  text-align: center;
+}
+
+.splash-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 32px;
+  animation: splashLogoEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes splashLogoEntrance {
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.splash-pet-logo {
+  width: clamp(160px, 42vw, 240px);
+  height: auto;
+  aspect-ratio: 329 / 263;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.18));
+}
+
+/* Minimal Clean Progress Bar without text or % */
+.splash-progress-wrapper {
+  width: 100%;
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.splash-progress-track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.splash-progress-bar {
+  height: 100%;
+  background: #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+  transition: width 0.12s ease-out;
+}
+
+
 
 

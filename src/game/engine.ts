@@ -24,6 +24,7 @@ import { PowerupSpawner } from './powerups';
 import { addCoins, getGameState, runtime, saveBest, setGameState } from './state';
 import {
   playCrystalPickupSound,
+  playHitSound,
   playMagnetPickupSound,
   playTurboPickupSound,
   restartBGM,
@@ -76,7 +77,7 @@ export function resetRunSession() {
   setGameState({ turboTime: 0, turboActive: false });
 }
 
-export function startGame() {
+export function startGame(initialLives?: number) {
   const { status } = getGameState();
   if (runtime.crashed && status !== 'gameover') return; // prevent restart during 3-second fall
   if (status === 'playing') return;
@@ -87,11 +88,12 @@ export function startGame() {
 
   resetRunSession();
   runtime.speed = START_SPEED;
+  const resolvedLives = typeof initialLives === 'number' ? initialLives : 3;
   setGameState({
     status: 'playing',
     score: 0,
     coins: 0,
-    lives: 3,
+    lives: resolvedLives,
     magnetTime: 0,
     magnetActive: false,
     turboTime: 0,
@@ -144,6 +146,7 @@ function crash() {
   crashedAt = performance.now();
   stopBGM();
   stopTurboMusic(0.2);
+  playHitSound();
   runtime.crashed = true;
   runtime.fallTimer = FALL_STAY_DURATION;
   runtime.canDoubleJump = false;

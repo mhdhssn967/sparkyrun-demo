@@ -24,13 +24,14 @@ export interface BoxPart {
 
 export type InstanceKind = 'box' | 'cylinder' | 'cone' | 'sphere' | 'lamp';
 
-export type BannerKind = 'bannerA' | 'bannerB' | 'flagQatar';
+export type BannerKind = 'bannerA' | 'bannerB' | 'flagQatar' | 'productBillboard';
 
 export interface BannerInstance {
   kind: BannerKind;
   position: readonly [number, number, number];
   rotation: readonly [number, number, number];
   scale: readonly [number, number, number];
+  uvOffset?: readonly [number, number];
 }
 
 /** One decorative instance inside a procedurally generated chunk (chunk-local space). */

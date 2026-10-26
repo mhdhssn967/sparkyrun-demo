@@ -59,9 +59,17 @@ function addFramedBanner(
     catwalk?: boolean;
     lamps?: number;
     depth?: number;
+    uvOffset?: readonly [number, number];
   },
 ) {
-  const aspect = kind === 'bannerA' ? BANNER_A_ASPECT : kind === 'bannerB' ? BANNER_B_ASPECT : FLAG_QATAR_ASPECT;
+  const aspect =
+    kind === 'bannerA'
+      ? BANNER_A_ASPECT
+      : kind === 'bannerB'
+        ? BANNER_B_ASPECT
+        : kind === 'flagQatar'
+          ? FLAG_QATAR_ASPECT
+          : 1.0; // productBillboard cell is square (1:1)
   const w = h * aspect;
   const rot: readonly [number, number, number] = [0, ry, 0];
   const nx = Math.sin(ry);
@@ -101,6 +109,7 @@ function addFramedBanner(
     position: [x + nx * quadOffset, y, z + nz * quadOffset],
     rotation: rot,
     scale: [w, h, 1],
+    uvOffset: options?.uvOffset,
   });
 
   return { w, h, rot, nx, nz, tx, tz };
@@ -110,23 +119,34 @@ function addFramedBanner(
 
 function roadsideHoarding(out: Out, banners: Banners, r: Rng, s: number, z: number) {
   const roll = range(r, 0, 1);
-  const x = s * range(r, 8.6, 9.8);
+  const x = s * range(r, 8.8, 10.0);
   // Angle inward towards oncoming runner
-  const ry = -s * range(r, 0.14, 0.26);
+  const ry = -s * range(r, 0.16, 0.28);
 
-  if (roll < 0.38) {
-    // Massive Unipole Billboard (Banner A - 329x263, aspect ~1.25095)
-    const h = range(r, 4.8, 6.2);
+  if (roll < 0.70) {
+    // 1. Massive Popular Electricals Product Showcase Billboard (70% probability)
+    const h = range(r, 5.8, 7.2);
     const y = range(r, 6.8, 8.2);
     const poleH = y - h / 2;
 
     // Heavy round steel pillar
-    cyl(out, x, 0, z, 0.48, poleH, COLORS.charcoal);
+    cyl(out, x, 0, z, 0.52, poleH, COLORS.charcoal);
 
-    addFramedBanner(out, banners, 'bannerA', x, y, z, h, ry, { catwalk: true, lamps: 2 });
-  } else if (roll < 0.72) {
-    // Massive Wide Highway Billboard (Banner B - 800x199, aspect ~4.0201)
-    const h = range(r, 2.7, 3.6);
+    // Pick 1 of 12 product cells
+    const pIdx = Math.floor(range(r, 0, 12));
+    const col = pIdx % 4;
+    const row = Math.floor(pIdx / 4);
+    const u = col * 0.25;
+    const v = (2 - row) * (1 / 3);
+
+    addFramedBanner(out, banners, 'productBillboard', x, y, z, h, ry, {
+      catwalk: true,
+      lamps: 3,
+      uvOffset: [u, v],
+    });
+  } else if (roll < 0.88) {
+    // 2. Wide PET Highway Billboard (Banner B - 800x199, aspect ~4.0201) (18% probability)
+    const h = range(r, 2.6, 3.4);
     const w = h * BANNER_B_ASPECT;
     const y = range(r, 6.4, 7.8);
     const poleH = y - h / 2;
@@ -140,22 +160,13 @@ function roadsideHoarding(out: Out, banners: Banners, r: Rng, s: number, z: numb
 
     addFramedBanner(out, banners, 'bannerB', x, y, z, h, ry, { catwalk: true, lamps: 3 });
   } else {
-    // Massive Qatar National Flag Display Billboard (flagQatar - aspect 28:11 ~2.545)
-    const h = range(r, 3.2, 4.2);
-    const w = h * FLAG_QATAR_ASPECT;
-    const y = range(r, 6.6, 8.0);
+    // 3. Unipole PET Brand Billboard (Banner A - 329x263, aspect ~1.25095) (12% probability)
+    const h = range(r, 4.4, 5.6);
+    const y = range(r, 6.8, 8.0);
     const poleH = y - h / 2;
 
-    // Dual white columns with gold base rings
-    const tx = Math.cos(ry);
-    const tz = -Math.sin(ry);
-    const colOffset = w * 0.26;
-    cyl(out, x - tx * colOffset, 0, z - tz * colOffset, 0.3, poleH, COLORS.white);
-    cyl(out, x + tx * colOffset, 0, z + tz * colOffset, 0.3, poleH, COLORS.white);
-    cyl(out, x - tx * colOffset, 0, z - tz * colOffset, 0.45, 0.4, COLORS.gold);
-    cyl(out, x + tx * colOffset, 0, z + tz * colOffset, 0.45, 0.4, COLORS.gold);
-
-    addFramedBanner(out, banners, 'flagQatar', x, y, z, h, ry, { catwalk: true, lamps: 3 });
+    cyl(out, x, 0, z, 0.48, poleH, COLORS.charcoal);
+    addFramedBanner(out, banners, 'bannerA', x, y, z, h, ry, { catwalk: true, lamps: 2 });
   }
 }
 
@@ -172,13 +183,42 @@ function roadside(out: Out, banners: Banners, r: Rng) {
     for (let i = 0; i < L / 3; i++) {
       box(out, s * edge, 0, -(i * 3 + 1.5), 0.5, 0.6, 2.8, i % 2 === 0 ? COLORS.maroon : COLORS.white);
     }
-    // street lights
+    // street lights with prominent real-world side product banners hung on lamp posts
     for (let i = 0; i < 4; i++) {
       const z = -(7.5 + i * 15);
       const x = s * (edge + 1.0);
-      cyl(out, x, 0, z, 0.2, 6.6, COLORS.charcoal);
-      box(out, x - s * 0.85, 6.5, z, 1.7, 0.12, 0.14, COLORS.charcoal);
-      add(out, 'lamp', x - s * 1.6, 6.3, z, 0.7, 0.14, 0.34, 0xffe2a8);
+      cyl(out, x, 0, z, 0.22, 6.8, COLORS.charcoal);
+      box(out, x - s * 0.95, 6.7, z, 1.9, 0.12, 0.14, COLORS.charcoal);
+      add(out, 'lamp', x - s * 1.8, 6.5, z, 0.7, 0.14, 0.34, 0xffe2a8);
+
+      // Real-world side lamppost product advertising banner (enlarged & angled towards road)
+      if (chance(r, 0.75)) {
+        const pIdx = Math.floor(range(r, 0, 12));
+        const col = pIdx % 4;
+        const row = Math.floor(pIdx / 4);
+        const u = col * 0.25;
+        const v = (2 - row) * (1 / 3);
+
+        const bannerH = 3.2; // High-visibility product poster
+        const bannerW = 2.8;
+        const bannerY = 4.2;
+        const bannerX = x + s * 1.0;
+        // Inward facing angle towards the oncoming runner
+        const bannerRy = -s * 0.22;
+
+        // Clean lightweight horizontal mounting bracket arms from the pole
+        box(out, (x + bannerX) / 2, bannerY + bannerH * 0.45, z, 1.0, 0.08, 0.08, COLORS.charcoal);
+        box(out, (x + bannerX) / 2, bannerY - bannerH * 0.45, z, 1.0, 0.08, 0.08, COLORS.charcoal);
+
+        // Poster quad facing oncoming player (+z direction with slight inward angle)
+        banners.push({
+          kind: 'productBillboard',
+          position: [bannerX, bannerY, z + 0.15],
+          rotation: [0, bannerRy, 0],
+          scale: [bannerW, bannerH, 1],
+          uvOffset: [u, v],
+        });
+      }
     }
     // palms
     for (let i = 0; i < 5; i++) {
@@ -190,20 +230,20 @@ function roadside(out: Out, banners: Banners, r: Rng) {
       sphere(out, x + range(r, -0.3, 0.3), h + 0.25, z, 1.9, 0.6, 1.9, COLORS.palmLight);
     }
 
-    // Qatar National Flagpoles along the Boulevard
-    for (let i = 0; i < 3; i++) {
-      const z = -(10 + i * 20 + range(r, -1, 1));
-      const x = s * (edge + 0.95);
-      const poleH = 7.8;
-      // White/Silver ceremonial pole with gold sphere finial
-      cyl(out, x, 0, z, 0.16, poleH, COLORS.white);
-      sphere(out, x, poleH + 0.15, z, 0.34, 0.34, 0.34, COLORS.gold);
-      // Ceremonial Qatar flag attached near the top
+    // Real Qatar National Flagpoles placed randomly here and there in the environment
+    const numFlags = Math.floor(range(r, 1, 4));
+    for (let i = 0; i < numFlags; i++) {
+      const z = -range(r, 4, 56);
+      const x = s * (edge + range(r, 0.8, 3.2));
+      const poleH = range(r, 7.2, 8.8);
+      // Silver ceremonial pole with gold finial
+      cyl(out, x, 0, z, 0.15, poleH, COLORS.white);
+      sphere(out, x, poleH + 0.15, z, 0.32, 0.32, 0.32, COLORS.gold);
+      // Qatar flag flying near top
       const flagH = 1.35;
-      const flagW = flagH * FLAG_QATAR_ASPECT; // ~3.43m
-      const flagY = poleH - flagH / 2 - 0.3;
-      // Angle flag slightly outward/waving along the road
-      const flagRy = s > 0 ? 0.05 : Math.PI - 0.05;
+      const flagW = flagH * FLAG_QATAR_ASPECT;
+      const flagY = poleH - flagH / 2 - 0.25;
+      const flagRy = s > 0 ? range(r, -0.1, 0.2) : Math.PI + range(r, -0.2, 0.1);
       banners.push({
         kind: 'flagQatar',
         position: [x + (s > 0 ? flagW / 2 + 0.05 : -flagW / 2 - 0.05), flagY, z],
@@ -212,7 +252,7 @@ function roadside(out: Out, banners: Banners, r: Rng) {
       });
     }
 
-    // Roadside hoardings / billboards (halved amount)
+    // Roadside hoardings / big billboards
     for (const zc of [18, 42]) {
       if (chance(r, 0.45)) {
         roadsideHoarding(out, banners, r, s, -zc + range(r, -2.5, 2.5));
@@ -235,31 +275,47 @@ function modernTower(out: Out, banners: Banners, r: Rng, s: number, x: number, z
   if (chance(r, 0.4)) box(out, x, bandY + 2.6, z, w * 1.04, 0.5, d * 1.04, COLORS.white);
   if (chance(r, 0.4)) cyl(out, x, 4 + h, z, 0.35, 7, COLORS.charcoal); // antenna
 
-  // Building Banners / Mega-Hoardings on Modern Towers (halved amount)
-  // 1. Facade LED Display (Banner A or Banner B)
-  if (chance(r, 0.4)) {
-    if (chance(r, 0.55)) {
-      // Skyscraper Facade LED Display (Banner A - 329x263, aspect ~1.25095)
-      const bh = range(r, 7.5, 11.5);
+  // Building Banners on Modern Towers (greatly reduced PET logo frequency)
+  // 1. Facade LED Display
+  if (chance(r, 0.16)) {
+    const roll = r();
+    if (roll < 0.5) {
+      // High-resolution Product Showcase Billboard on building facade
+      const bh = range(r, 6.0, 9.0);
       const by = 4 + range(r, 4.0, Math.min(18, Math.max(5, h - bh - 2)));
       const ry = -s * range(r, 0.22, 0.34);
       const bx = x - s * (w * 0.22);
       const bz = z + d / 2 + 0.25;
-      addFramedBanner(out, banners, 'bannerA', bx, by, bz, bh, ry, { lamps: 3, depth: 0.22 });
-    } else {
-      // Wide Commercial Podium Banner (Banner B - 800x199, aspect ~4.0201)
-      const bh = range(r, 2.7, 3.6);
+      const pIdx = Math.floor(range(r, 0, 12));
+      const col = pIdx % 4;
+      const row = Math.floor(pIdx / 4);
+      addFramedBanner(out, banners, 'productBillboard', bx, by, bz, bh, ry, {
+        lamps: 3,
+        depth: 0.22,
+        uvOffset: [col * 0.25, (2 - row) * (1 / 3)],
+      });
+    } else if (roll < 0.8) {
+      // Wide Commercial Podium Banner (Banner B)
+      const bh = range(r, 2.5, 3.2);
       const by = 2.4;
       const ry = -s * range(r, 0.12, 0.22);
       const bx = x - s * (podW * 0.14);
       const bz = z + podD / 2 + 0.22;
       addFramedBanner(out, banners, 'bannerB', bx, by, bz, bh, ry, { catwalk: true, lamps: 3 });
+    } else {
+      // Skyscraper Facade LED Display (Banner A)
+      const bh = range(r, 6.5, 9.0);
+      const by = 4 + range(r, 4.0, Math.min(18, Math.max(5, h - bh - 2)));
+      const ry = -s * range(r, 0.22, 0.34);
+      const bx = x - s * (w * 0.22);
+      const bz = z + d / 2 + 0.25;
+      addFramedBanner(out, banners, 'bannerA', bx, by, bz, bh, ry, { lamps: 3, depth: 0.22 });
     }
   }
 
-  // 2. Rooftop Illuminated Hoarding on mid-rises
-  if (h <= 36 && chance(r, 0.28)) {
-    const bh = range(r, 2.6, 3.4);
+  // 2. Rooftop Illuminated Hoarding on mid-rises (rare)
+  if (h <= 36 && chance(r, 0.10)) {
+    const bh = range(r, 2.4, 3.0);
     const bw = bh * BANNER_B_ASPECT;
     const by = 4 + h + bh / 2 + 0.8;
     const ry = -s * 0.2;
@@ -282,19 +338,9 @@ function roundTower(out: Out, banners: Banners, r: Rng, s: number, x: number, z:
   cyl(out, x, h, z, dia * 1.08, 1.2, COLORS.maroon);
   if (chance(r, 0.5)) cone(out, x, h + 1.2, z, dia * 0.5, 7, COLORS.white);
 
-  // Large-scale building banners on round tower (halved amount)
-  if (chance(r, 0.38)) {
+  // Large-scale building banners on round tower (greatly reduced frequency)
+  if (chance(r, 0.14)) {
     if (chance(r, 0.5)) {
-      // Cantilever Facade LED Screen (Banner A)
-      const bh = range(r, 6.0, 8.5);
-      const by = range(r, 7.0, Math.min(20, Math.max(8, h - bh)));
-      const ry = -s * 0.3;
-      const bx = x - s * (dia * 0.26);
-      const bz = z + dia * 0.44;
-      // Structural connector struts to the curved glass wall
-      box(out, bx, by, bz - 0.4, 0.35, 0.35, 0.8, COLORS.charcoal);
-      addFramedBanner(out, banners, 'bannerA', bx, by, bz, bh, ry, { lamps: 2 });
-    } else {
       // Panoramic Street Billboard on Round Tower (Banner B)
       const bh = range(r, 2.6, 3.4);
       const by = range(r, 5.0, Math.min(16, Math.max(6, h - bh)));
@@ -303,6 +349,15 @@ function roundTower(out: Out, banners: Banners, r: Rng, s: number, x: number, z:
       const bz = z + dia * 0.45;
       box(out, bx, by, bz - 0.4, 0.35, 0.35, 0.8, COLORS.charcoal);
       addFramedBanner(out, banners, 'bannerB', bx, by, bz, bh, ry, { catwalk: true, lamps: 3 });
+    } else {
+      // Cantilever Facade LED Screen (Banner A)
+      const bh = range(r, 5.0, 7.5);
+      const by = range(r, 7.0, Math.min(20, Math.max(8, h - bh)));
+      const ry = -s * 0.3;
+      const bx = x - s * (dia * 0.26);
+      const bz = z + dia * 0.44;
+      box(out, bx, by, bz - 0.4, 0.35, 0.35, 0.8, COLORS.charcoal);
+      addFramedBanner(out, banners, 'bannerA', bx, by, bz, bh, ry, { lamps: 2 });
     }
   }
 }
@@ -331,40 +386,32 @@ function traditionalHouse(out: Out, banners: Banners, r: Rng, s: number, x: numb
   }
   if (chance(r, 0.3)) sphere(out, x - w * 0.15, h + 0.2, z, Math.min(w, d) * 0.55, Math.min(w, d) * 0.4, Math.min(w, d) * 0.55, COLORS.white);
 
-  // Large-scale commercial billboards on traditional buildings (halved amount)
-  if (chance(r, 0.4)) {
+  // Billboards on traditional buildings (greatly reduced frequency)
+  if (chance(r, 0.15)) {
     const roll = r();
     const frontZ = z + d / 2;
-    if (roll < 0.4) {
-      // Giant Commercial Wall Board (Banner A)
-      const bh = range(r, 3.8, 5.2);
-      const by = range(r, 3.2, Math.min(6.2, h - bh / 2 + 0.6));
-      const ry = -s * range(r, 0.16, 0.28);
-      const bx = x - s * (w * 0.2);
-      const bz = frontZ + 0.22;
-      addFramedBanner(out, banners, 'bannerA', bx, by, bz, bh, ry, { lamps: 2 });
-    } else if (roll < 0.72) {
+    if (roll < 0.6) {
       // Panoramic Street Banner (Banner B)
-      const bh = range(r, 2.2, 3.0);
+      const bh = range(r, 2.2, 2.8);
       const by = range(r, 3.2, Math.min(6.8, h - bh / 2 + 0.5));
       const ry = -s * range(r, 0.14, 0.24);
       const bx = x - s * (w * 0.14);
       const bz = frontZ + 0.22;
       addFramedBanner(out, banners, 'bannerB', bx, by, bz, bh, ry, { catwalk: true, lamps: 3 });
     } else {
-      // Rooftop Structural Truss Billboard (Banner B)
-      const bh = range(r, 2.6, 3.4);
-      const bw = bh * BANNER_B_ASPECT;
-      const by = h + bh / 2 + 0.8;
-      const ry = -s * range(r, 0.15, 0.25);
-      const bx = x - s * (w * 0.12);
-      const bz = frontZ - 0.2;
-      const tx = Math.cos(ry);
-      const tz = -Math.sin(ry);
-      const legOffset = bw * 0.28;
-      cyl(out, bx - tx * legOffset, h, bz - tz * legOffset, 0.22, bh / 2 + 0.8, COLORS.charcoal);
-      cyl(out, bx + tx * legOffset, h, bz + tz * legOffset, 0.22, bh / 2 + 0.8, COLORS.charcoal);
-      addFramedBanner(out, banners, 'bannerB', bx, by, bz, bh, ry, { catwalk: true, lamps: 3 });
+      // Product Wall Board
+      const bh = range(r, 3.2, 4.4);
+      const by = range(r, 3.2, Math.min(6.2, h - bh / 2 + 0.6));
+      const ry = -s * range(r, 0.16, 0.28);
+      const bx = x - s * (w * 0.2);
+      const bz = frontZ + 0.22;
+      const pIdx = Math.floor(range(r, 0, 12));
+      const col = pIdx % 4;
+      const row = Math.floor(pIdx / 4);
+      addFramedBanner(out, banners, 'productBillboard', bx, by, bz, bh, ry, {
+        lamps: 2,
+        uvOffset: [col * 0.25, (2 - row) * (1 / 3)],
+      });
     }
   }
 }

@@ -3,6 +3,8 @@ import {
   BGM_DEFAULT_VOLUME,
   BGM_URL,
   COIN_SOUND_URL,
+  GAMEOVER_SOUND_URL,
+  HIT_SOUND_URL,
   POWERUP_SOUND_URL,
   POWERUP_THEME_URL,
 } from './constants';
@@ -128,6 +130,7 @@ export function setMuted(muted: boolean) {
   saveStoredMute(muted);
   if (muted) {
     stopTurboMusic(0.1);
+    stopGameOverSound();
   }
   if (bgmAudio) {
     bgmAudio.muted = muted;
@@ -511,6 +514,161 @@ export function stopTurboMusic(fadeDuration = 1.0) {
         turboThemeAudio.currentTime = 0;
       }
     }, 25);
+  }
+}
+
+// ---- Obstacle Hit & Game Over Sounds ---------------------------------------
+
+let hitAudioBuffer: AudioBuffer | null = null;
+let isHitLoading = false;
+let hitFallbackAudio: HTMLAudioElement | null = null;
+
+let gameOverAudioBuffer: AudioBuffer | null = null;
+let isGameOverLoading = false;
+let currentGameOverSource: AudioBufferSourceNode | null = null;
+let gameOverFallbackAudio: HTMLAudioElement | null = null;
+
+export async function loadHitSoundBuffer() {
+  if (hitAudioBuffer || isHitLoading) return;
+  isHitLoading = true;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const response = await fetch(HIT_SOUND_URL);
+    const arrayBuffer = await response.arrayBuffer();
+    hitAudioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  } catch {
+    /* Fallback HTMLAudioElement handles playback */
+  } finally {
+    isHitLoading = false;
+  }
+}
+
+export async function loadGameOverSoundBuffer() {
+  if (gameOverAudioBuffer || isGameOverLoading) return;
+  isGameOverLoading = true;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const response = await fetch(GAMEOVER_SOUND_URL);
+    const arrayBuffer = await response.arrayBuffer();
+    gameOverAudioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  } catch {
+    /* Fallback HTMLAudioElement handles playback */
+  } finally {
+    isGameOverLoading = false;
+  }
+}
+
+/** Plays the obstacle collision hit sound (/sounds/hit.mp3). */
+export function playHitSound() {
+  if (isMuted()) return;
+
+  const ctx = getAudioContext();
+  if (ctx) {
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    if (hitAudioBuffer) {
+      try {
+        const source = ctx.createBufferSource();
+        source.buffer = hitAudioBuffer;
+
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 1.0;
+
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
+        return;
+      } catch {
+        /* Fall back to HTMLAudioElement */
+      }
+    }
+  }
+
+  // Fallback: HTMLAudioElement
+  try {
+    if (!hitFallbackAudio && typeof Audio !== 'undefined') {
+      hitFallbackAudio = new Audio(HIT_SOUND_URL);
+      hitFallbackAudio.preload = 'auto';
+    }
+    if (hitFallbackAudio) {
+      hitFallbackAudio.currentTime = 0;
+      hitFallbackAudio.volume = 1.0;
+      hitFallbackAudio.play().catch(() => {});
+    }
+  } catch {
+    /* Autoplay blocked */
+  }
+}
+
+/** Plays the Game Over screen music/jingle (/sounds/gameover.mp3). */
+export function playGameOverSound() {
+  if (isMuted()) return;
+
+  stopGameOverSound();
+
+  const ctx = getAudioContext();
+  if (ctx) {
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
+    if (gameOverAudioBuffer) {
+      try {
+        const source = ctx.createBufferSource();
+        source.buffer = gameOverAudioBuffer;
+
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 0.85;
+
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        source.start(0);
+        currentGameOverSource = source;
+        return;
+      } catch {
+        /* Fall back to HTMLAudioElement */
+      }
+    }
+  }
+
+  // Fallback: HTMLAudioElement
+  try {
+    if (!gameOverFallbackAudio && typeof Audio !== 'undefined') {
+      gameOverFallbackAudio = new Audio(GAMEOVER_SOUND_URL);
+      gameOverFallbackAudio.preload = 'auto';
+    }
+    if (gameOverFallbackAudio) {
+      gameOverFallbackAudio.currentTime = 0;
+      gameOverFallbackAudio.volume = 0.85;
+      gameOverFallbackAudio.play().catch(() => {});
+    }
+  } catch {
+    /* Autoplay blocked */
+  }
+}
+
+/** Stops Game Over music when leaving the screen or starting a new run. */
+export function stopGameOverSound() {
+  if (currentGameOverSource) {
+    try {
+      currentGameOverSource.stop();
+      currentGameOverSource.disconnect();
+    } catch {
+      /* already stopped */
+    }
+    currentGameOverSource = null;
+  }
+  if (gameOverFallbackAudio && !gameOverFallbackAudio.paused) {
+    try {
+      gameOverFallbackAudio.pause();
+      gameOverFallbackAudio.currentTime = 0;
+    } catch {
+      /* ignore */
+    }
   }
 }
 

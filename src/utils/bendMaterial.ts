@@ -56,6 +56,40 @@ export function createBannerMaterial(texture: Texture, cacheKey: string) {
 }
 
 /**
+ * Instanced Atlas banner material: applies world curve bend and shifts UV coordinates
+ * using per-instance `aUvOffset` attribute (offset.x, offset.y) and scale vec2(0.25, 1/3)
+ */
+export function createAtlasBannerMaterial(texture: Texture, cacheKey = 'bend-atlas-banner') {
+  const material = new MeshStandardMaterial({
+    map: texture,
+    roughness: 0.35,
+    metalness: 0.02,
+    side: DoubleSide,
+  });
+
+  material.onBeforeCompile = (shader) => {
+    patchBendVertex(shader, 'attribute vec2 aUvOffset;\nvarying vec2 vAtlasUv;');
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <uv_vertex>',
+      /* glsl */ `#include <uv_vertex>
+      vAtlasUv = vec2(uv.x * 0.25, uv.y * (1.0 / 3.0)) + aUvOffset;`,
+    );
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vAtlasUv;')
+      .replace(
+        '#include <map_fragment>',
+        /* glsl */ `
+        #ifdef USE_MAP
+          vec4 sampledDiffuseColor = texture2D(map, vAtlasUv);
+          diffuseColor *= sampledDiffuseColor;
+        #endif`,
+      );
+  };
+  material.customProgramCacheKey = () => cacheKey;
+  return material;
+}
+
+/**
  * Standard PBR material with a procedural window grid on tall faces — gives skyscrapers
  * polished reflections and detail without any textures or extra geometry. Works on unit boxes and cylinders.
  */

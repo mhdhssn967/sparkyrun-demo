@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { resetRunSession, startGame } from '../../game/engine';
 import { runtime, setGameState, useGameState } from '../../game/state';
 import { requestFullscreen } from '../../utils/fullscreen';
-import { restartBGM, stopBGM } from '../../game/audio';
+import { playGameOverSound, restartBGM, stopBGM, stopGameOverSound } from '../../game/audio';
 import { popularApi } from '../../services/popularApi';
 import type { EndSessionResponse } from '../../types/customer';
 import { LivesLeftDisplay } from './LivesLeftDisplay';
@@ -17,6 +17,7 @@ export function GameOverScreen() {
 
   useEffect(() => {
     stopBGM();
+    playGameOverSound();
     let isMounted = true;
 
     const activeSession = popularApi.getActiveSession();
@@ -59,6 +60,7 @@ export function GameOverScreen() {
 
     return () => {
       isMounted = false;
+      stopGameOverSound();
     };
   }, [coins, best]);
 
@@ -68,6 +70,7 @@ export function GameOverScreen() {
 
   const handleRunAgain = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.blur();
+    stopGameOverSound();
     if (livesLeft <= 0) {
       resetRunSession();
       setGameState({ status: 'home' });
@@ -104,7 +107,7 @@ export function GameOverScreen() {
       runtime.luluGifts = [];
     }
 
-    startGame();
+    startGame(startRes.livesRemaining);
   };
 
   return (
@@ -153,6 +156,7 @@ export function GameOverScreen() {
                 type="button"
                 className="gameover-btn-home"
                 onClick={() => {
+                  stopGameOverSound();
                   resetRunSession();
                   setGameState({ status: 'home' });
                 }}
@@ -170,6 +174,7 @@ export function GameOverScreen() {
               type="button"
               className="gameover-btn-home"
               onClick={() => {
+                stopGameOverSound();
                 resetRunSession();
                 setGameState({ status: 'home' });
               }}

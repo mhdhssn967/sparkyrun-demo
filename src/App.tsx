@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { GameCanvas } from './components/game/GameCanvas';
 import { GameUI } from './components/game/GameUI';
+import { SplashScreen } from './components/ui/SplashScreen';
 import { PopularDashboard } from './components/dashboard/PopularDashboard';
 import './index.css';
 
@@ -56,6 +57,8 @@ export default function App() {
     <div className="app">
       <GameCanvas />
       <GameUI />
+      <SplashScreen />
     </div>
   );
 }
+

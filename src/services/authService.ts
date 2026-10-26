@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../config/api';
 export interface PlayerProfile {
   id: string;
   name: string;
+  companyName?: string;
   phone: string;
   age?: number | null;
   email?: string;
@@ -37,16 +38,20 @@ export async function checkMobileNumber(phone: string): Promise<AuthResponse> {
 }
 
 /**
- * 2. Register Player with Mobile Number and Name (Stored into PostgreSQL via Better Auth User Schema)
+ * 2. Register Player with Mobile Number, Name, and optional Company Name
  */
-export async function registerPlayer(phone: string, name: string): Promise<AuthResponse> {
+export async function registerPlayer(phone: string, name: string, companyName?: string): Promise<AuthResponse> {
   const cleanPhone = phone.trim().replace(/\D/g, '');
   try {
     const res = await fetch(`${API_BASE_URL}/api/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ phone: cleanPhone, name: name.trim() }),
+      body: JSON.stringify({
+        phone: cleanPhone,
+        name: name.trim(),
+        companyName: companyName ? companyName.trim() : undefined,
+      }),
     });
     const data: AuthResponse = await res.json();
 

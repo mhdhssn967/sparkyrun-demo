@@ -77,12 +77,13 @@ export const CHUNK_CAPACITY = { box: 460, cylinder: 300, cone: 40, sphere: 100, 
 export const BANNER_A_ASPECT = 329 / 263; // ~1.25095057
 export const BANNER_B_ASPECT = 800 / 199; // ~4.02010050
 export const FLAG_QATAR_ASPECT = 28 / 11; // ~2.54545455
-export const BANNER_KINDS = ['bannerA', 'bannerB', 'flagQatar'] as const;
-export const BANNER_CAPACITY = { bannerA: 64, bannerB: 64, flagQatar: 64 } as const;
+export const BANNER_KINDS = ['bannerA', 'bannerB', 'flagQatar', 'productBillboard'] as const;
+export const BANNER_CAPACITY = { bannerA: 64, bannerB: 64, flagQatar: 64, productBillboard: 64 } as const;
 export const BANNER_TEXTURES = {
   bannerA: '/bannerimages/image.png',
   bannerB: '/bannerimages/image%20copy.png',
   flagQatar: '/qatar_flag.png',
+  productBillboard: '/products_atlas.webp',
 } as const;
 
 // ---- Audio -----------------------------------------------------------------
@@ -91,6 +92,8 @@ export const BGM_DEFAULT_VOLUME = 0.5;
 export const COIN_SOUND_URL = '/coin.mp3';
 export const POWERUP_SOUND_URL = '/assets/power.mp3';
 export const POWERUP_THEME_URL = '/assets/powerup.mp3';
+export const HIT_SOUND_URL = '/sounds/hit.mp3';
+export const GAMEOVER_SOUND_URL = '/sounds/gameover.mp3';
 
 // ---- Power-up / Turbo ------------------------------------------------------
 export const POWERUP_URL = '/assets/powerup.glb';

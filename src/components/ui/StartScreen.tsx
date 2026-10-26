@@ -45,7 +45,7 @@ export function StartScreen() {
 
       requestFullscreen();
       restartBGM();
-      startGame();
+      startGame(sessionRes.livesRemaining);
     } catch (err) {
       console.error('Failed to start run session:', err);
       setIsStarting(false);

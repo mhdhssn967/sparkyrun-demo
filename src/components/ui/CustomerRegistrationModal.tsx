@@ -26,6 +26,7 @@ export function CustomerRegistrationModal({
   );
   const [phone, setPhone] = useState(initialProfile?.phone || '');
   const [name, setName] = useState(initialProfile?.name || '');
+  const [companyName, setCompanyName] = useState(initialProfile?.companyName || '');
   const [nameTouched, setNameTouched] = useState(false);
   const [consent, setConsent] = useState(initialProfile?.consent ?? false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -37,6 +38,7 @@ export function CustomerRegistrationModal({
     if (saved && !initialProfile) {
       if (saved.phone) setPhone(saved.phone);
       if (saved.name) setName(saved.name);
+      if (saved.companyName) setCompanyName(saved.companyName);
       setConsent(true);
     }
   }, [initialProfile]);
@@ -90,13 +92,14 @@ export function CustomerRegistrationModal({
     }
   };
 
-  // Step 2: Register new user with entered Name
+  // Step 2: Register new user with entered Name & Company
   const handleNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setNameTouched(true);
     setErrorMsg('');
 
     const trimmedName = name.trim();
+    const trimmedCompany = companyName.trim();
     if (!isNameValid) {
       setErrorMsg('Please enter your full name.');
       return;
@@ -106,6 +109,7 @@ export function CustomerRegistrationModal({
     try {
       const profile = await popularApi.registerCustomer({
         name: trimmedName,
+        companyName: trimmedCompany || undefined,
         countryCode: selectedCountry.dialCode,
         phone: cleanPhone,
         consent,
@@ -386,6 +390,27 @@ export function CustomerRegistrationModal({
                       maxLength={40}
                       required
                       autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Company Name Field (Popular B2B Clients) */}
+                <div className="cyber-form-group">
+                  <div className="cyber-label-row">
+                    <label htmlFor="cyber-company" className="cyber-label">
+                      <span className="cyber-label-icon">🏢</span>
+                      <span className="cyber-label-text">Company / Business Name</span>
+                    </label>
+                  </div>
+                  <div className="cyber-input-wrap">
+                    <input
+                      id="cyber-company"
+                      type="text"
+                      className="cyber-text-input"
+                      placeholder="e.g. Al-Mansoor Electricals or Trading Co."
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      maxLength={60}
                     />
                   </div>
                 </div>

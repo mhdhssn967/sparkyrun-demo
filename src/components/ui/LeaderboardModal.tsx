@@ -220,6 +220,11 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
                 <div className="smooth-player-name" title={top2?.displayName || 'Empty'}>
                   {top2 ? (top2.isCurrentUser ? `${top2.displayName}(You)` : top2.displayName) : '---'}
                 </div>
+                {top2?.companyName && (
+                  <div className="smooth-podium-company" title={top2.companyName}>
+                    {top2.companyName}
+                  </div>
+                )}
                 <div className="smooth-player-points">
                   <CoinSvg className="smooth-coin-icon" />
                   <span>{top2 ? `${top2.coins.toLocaleString()} points` : '0 points'}</span>
@@ -242,6 +247,11 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
                 <div className="smooth-player-name name-1" title={top1?.displayName || 'Empty'}>
                   {top1 ? (top1.isCurrentUser ? `${top1.displayName}(You)` : top1.displayName) : '---'}
                 </div>
+                {top1?.companyName && (
+                  <div className="smooth-podium-company" title={top1.companyName}>
+                    {top1.companyName}
+                  </div>
+                )}
                 <div className="smooth-player-points">
                   <CoinSvg className="smooth-coin-icon" />
                   <span>{top1 ? `${top1.coins.toLocaleString()} points` : '0 points'}</span>
@@ -261,6 +271,11 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
                 <div className="smooth-player-name" title={top3?.displayName || 'Empty'}>
                   {top3 ? (top3.isCurrentUser ? `${top3.displayName}(You)` : top3.displayName) : '---'}
                 </div>
+                {top3?.companyName && (
+                  <div className="smooth-podium-company" title={top3.companyName}>
+                    {top3.companyName}
+                  </div>
+                )}
                 <div className="smooth-player-points">
                   <CoinSvg className="smooth-coin-icon" />
                   <span>{top3 ? `${top3.coins.toLocaleString()} points` : '0 points'}</span>
@@ -294,6 +309,11 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
                       <div className="smooth-card-player-name">
                         {entry.isCurrentUser ? `${entry.displayName} (You)` : entry.displayName}
                       </div>
+                      {entry.companyName && (
+                        <div className="smooth-card-company" title={entry.companyName}>
+                          🏢 {entry.companyName}
+                        </div>
+                      )}
                       {activeTab === 'all_time' && typeof entry.gamesPlayed === 'number' && (
                         <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
                           {entry.gamesPlayed} {entry.gamesPlayed === 1 ? 'game' : 'games'} played • Best: {entry.bestScore?.toLocaleString() ?? entry.coins.toLocaleString()}
