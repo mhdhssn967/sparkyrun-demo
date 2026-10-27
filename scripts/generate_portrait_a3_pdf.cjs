@@ -31,12 +31,12 @@ async function generateSheets() {
   const frontPng = PNG.sync.read(frontData);
 
   // Exact white box in QR FRONT.png:
-  // x: [1006, 1468] (width = 463 px, center = 1237)
-  // y: [262, 724]   (height = 463 px, center = 493)
-  // QR code size: 380x380 px, centered at (1047, 303)
+  // x: [1038, 1500] (width = 463 px, center = 1269)
+  // y: [284, 746]   (height = 463 px, center = 515)
+  // QR code size: 380x380 px, centered at (1079, 325)
   const QR_SIZE = 380;
-  const QR_X = 1047;
-  const QR_Y = 303;
+  const QR_X = 1079;
+  const QR_Y = 325;
 
   const qrPngBuffer = await QRCode.toBuffer('https://sparkyrun.gamefaktory.com/?token=PET-DEMO-TEST', {
     width: QR_SIZE,

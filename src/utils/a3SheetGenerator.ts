@@ -6,12 +6,12 @@ import { jsPDF } from 'jspdf';
  *
  * Source Image Dimensions: 1530 x 1028 px (Aspect ratio: 1.4883)
  * White QR Box bounds in QR FRONT.png:
- *   Horizontal bounds: x = 1006 to 1468 (Width = 463 px, CenterX = 1237)
- *   Vertical bounds:   y = 262 to 724  (Height = 463 px, CenterY = 493)
+ *   Horizontal bounds: x = 1038 to 1500 (Width = 463 px, CenterX = 1269)
+ *   Vertical bounds:   y = 284 to 746   (Height = 463 px, CenterY = 515)
  *
  * QR Placement:
  *   Square size = 380 x 380 px
- *   Centered at x = 1047, y = 303 (leaves 41.5px quiet zone on all sides)
+ *   Centered at x = 1079, y = 325 (leaves 41.5px uniform quiet zone on all sides)
  */
 
 export interface GenerateA3Options {
@@ -32,7 +32,7 @@ export interface GenerateCustomA3Options {
 export async function downloadA3TestSheet(): Promise<void> {
   try {
     const link = document.createElement('a');
-    link.href = '/Popular_Sparky_A3_Test_Sheet.pdf';
+    link.href = `/Popular_Sparky_A3_Test_Sheet.pdf?v=${Date.now()}`;
     link.download = 'Popular_Sparky_A3_Test_Sheet.pdf';
     document.body.appendChild(link);
     link.click();
@@ -48,7 +48,7 @@ export async function downloadA3TestSheet(): Promise<void> {
  */
 export function downloadA3BackSheet(): void {
   const link = document.createElement('a');
-  link.href = '/Popular_Sparky_A3_Back_Sheet.pdf';
+  link.href = `/Popular_Sparky_A3_Back_Sheet.pdf?v=${Date.now()}`;
   link.download = 'Popular_Sparky_A3_Back_Sheet.pdf';
   document.body.appendChild(link);
   link.click();
@@ -103,8 +103,8 @@ export async function generateA3PdfForTokens(options: GenerateCustomA3Options): 
   });
 
   const QR_SIZE = 380;
-  const QR_X = 1047;
-  const QR_Y = 303;
+  const QR_X = 1079;
+  const QR_Y = 325;
 
   for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
     if (pageIdx > 0) {

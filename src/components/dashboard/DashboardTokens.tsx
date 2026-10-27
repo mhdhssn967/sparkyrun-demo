@@ -286,7 +286,7 @@ export function DashboardTokens() {
                 Showroom Template Spec
               </div>
               <div style={{ fontSize: '13px', color: '#4C0519', lineHeight: 1.5, marginBottom: '14px' }}>
-                Coupons use <b>QR FRONT.png</b> (1530 × 1028 px) with QR codes stamped at (1047, 303), perfectly sized for card cutting.
+                Coupons use <b>QR FRONT.png</b> (1530 × 1028 px) with QR codes stamped at (1079, 325), perfectly sized for card cutting.
               </div>
 
               <button
