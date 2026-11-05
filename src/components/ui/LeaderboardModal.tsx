@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { LeaderboardEntry } from '../../types/customer';
-import { popularApi, getQatarWeeklyCycle } from '../../services/popularApi';
+import { popularApi } from '../../services/popularApi';
 
 interface LeaderboardPageProps {
   onBack?: () => void;
   onClose?: () => void;
 }
 
-// -------------------------------------------------------------
-// Sleek Vector Icons matching the reference UI
-// -------------------------------------------------------------
 function ArrowLeftSvg({ className = '' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -23,7 +20,6 @@ function ArrowLeftSvg({ className = '' }: { className?: string }) {
     </svg>
   );
 }
-
 
 function CrownSvg({ className = '' }: { className?: string }) {
   return (
@@ -85,16 +81,6 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
   const [activeTab, setActiveTab] = useState<'weekly' | 'all_time'>('weekly');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [weeklyTimeLeft, setWeeklyTimeLeft] = useState<string>(() => getQatarWeeklyCycle().formattedTimeLeft);
-
-  useEffect(() => {
-    const updateCountdown = () => {
-      setWeeklyTimeLeft(getQatarWeeklyCycle().formattedTimeLeft);
-    };
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -123,17 +109,14 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
     };
   }, [activeTab]);
 
-  // Top 3 Podium participants
   const top1 = entries[0];
   const top2 = entries[1];
   const top3 = entries[2];
 
   return (
     <div className="smooth-lb-viewport">
-      {/* Subtle top ambient red glow */}
       <div className="smooth-lb-ambient-glow" />
 
-      {/* Main Container */}
       <div className="smooth-lb-container">
         {/* Top Header Bar */}
         <header className="smooth-lb-header">
@@ -170,29 +153,6 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
           </button>
         </div>
 
-        {/* Weekly Countdown & Prize Banner (Only on Weekly tab) */}
-        {activeTab === 'weekly' && (
-          <div className="smooth-lb-weekly-banner">
-            <div className="smooth-lb-weekly-header">
-              <div className="smooth-lb-weekly-badge">
-                <span className="smooth-lb-pulsing-dot" />
-                <span>WEEKLY CHAMPION RACE</span>
-              </div>
-              <div className="smooth-lb-timer-pill" title="Resets Sunday at 12:00 AM Qatar Time (AST)">
-                <span className="smooth-lb-timer-icon">⏱️</span>
-                <span className="smooth-lb-timer-val">{weeklyTimeLeft} left</span>
-              </div>
-            </div>
-            <div className="smooth-lb-weekly-reward">
-              <span className="smooth-lb-gift-icon">🎁</span>
-              <div className="smooth-lb-reward-text">
-                <span className="smooth-lb-reward-label">Weekly #1 Grand Prize:</span>
-                <span className="smooth-lb-reward-title">PET Gift Bag with T-Shirt, Watch and Book Case</span>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Content Area */}
         {isLoading ? (
           <div className="smooth-lb-loading">
@@ -205,7 +165,7 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
           </div>
         ) : (
           <>
-            {/* Top 3 Floating Circles Podium with Crown */}
+            {/* Top 3 Podium */}
             <div className="smooth-lb-podium">
               {/* Rank 2 (Left) */}
               <div className="smooth-podium-slot rank-2">
@@ -218,20 +178,15 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
                   <div className="smooth-rank-badge badge-2">2</div>
                 </div>
                 <div className="smooth-player-name" title={top2?.displayName || 'Empty'}>
-                  {top2 ? (top2.isCurrentUser ? `${top2.displayName}(You)` : top2.displayName) : '---'}
+                  {top2 ? (top2.isCurrentUser ? `${top2.displayName} (You)` : top2.displayName) : '---'}
                 </div>
-                {top2?.companyName && (
-                  <div className="smooth-podium-company" title={top2.companyName}>
-                    {top2.companyName}
-                  </div>
-                )}
                 <div className="smooth-player-points">
                   <CoinSvg className="smooth-coin-icon" />
-                  <span>{top2 ? `${top2.coins.toLocaleString()} points` : '0 points'}</span>
+                  <span>{top2 ? `${top2.coins.toLocaleString()} pts` : '0 pts'}</span>
                 </div>
               </div>
 
-              {/* Rank 1 (Center - Largest with Crown) */}
+              {/* Rank 1 (Center - with Crown) */}
               <div className="smooth-podium-slot rank-1">
                 <div className="smooth-crown-wrap">
                   <CrownSvg className="smooth-crown-svg" />
@@ -245,16 +200,11 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
                   <div className="smooth-rank-badge badge-1">1</div>
                 </div>
                 <div className="smooth-player-name name-1" title={top1?.displayName || 'Empty'}>
-                  {top1 ? (top1.isCurrentUser ? `${top1.displayName}(You)` : top1.displayName) : '---'}
+                  {top1 ? (top1.isCurrentUser ? `${top1.displayName} (You)` : top1.displayName) : '---'}
                 </div>
-                {top1?.companyName && (
-                  <div className="smooth-podium-company" title={top1.companyName}>
-                    {top1.companyName}
-                  </div>
-                )}
                 <div className="smooth-player-points">
                   <CoinSvg className="smooth-coin-icon" />
-                  <span>{top1 ? `${top1.coins.toLocaleString()} points` : '0 points'}</span>
+                  <span>{top1 ? `${top1.coins.toLocaleString()} pts` : '0 pts'}</span>
                 </div>
               </div>
 
@@ -269,16 +219,11 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
                   <div className="smooth-rank-badge badge-3">3</div>
                 </div>
                 <div className="smooth-player-name" title={top3?.displayName || 'Empty'}>
-                  {top3 ? (top3.isCurrentUser ? `${top3.displayName}(You)` : top3.displayName) : '---'}
+                  {top3 ? (top3.isCurrentUser ? `${top3.displayName} (You)` : top3.displayName) : '---'}
                 </div>
-                {top3?.companyName && (
-                  <div className="smooth-podium-company" title={top3.companyName}>
-                    {top3.companyName}
-                  </div>
-                )}
                 <div className="smooth-player-points">
                   <CoinSvg className="smooth-coin-icon" />
-                  <span>{top3 ? `${top3.coins.toLocaleString()} points` : '0 points'}</span>
+                  <span>{top3 ? `${top3.coins.toLocaleString()} pts` : '0 pts'}</span>
                 </div>
               </div>
             </div>
@@ -287,10 +232,10 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
             <div className="smooth-lb-table-head">
               <span className="th-rank">Rank</span>
               <span className="th-player">Player</span>
-              <span className="th-points">{activeTab === 'all_time' ? 'Total / Best' : 'Points'}</span>
+              <span className="th-points">{activeTab === 'all_time' ? 'Total Score' : 'Points'}</span>
             </div>
 
-            {/* List of cards (including top 3 on stands as well as in the list) */}
+            {/* List of cards */}
             <div className="smooth-lb-list">
               {entries.map((entry) => {
                 const rankClass = entry.rank === 1 ? 'rank-top-1' : entry.rank === 2 ? 'rank-top-2' : entry.rank === 3 ? 'rank-top-3' : '';
@@ -309,14 +254,9 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
                       <div className="smooth-card-player-name">
                         {entry.isCurrentUser ? `${entry.displayName} (You)` : entry.displayName}
                       </div>
-                      {entry.companyName && (
-                        <div className="smooth-card-company" title={entry.companyName}>
-                          🏢 {entry.companyName}
-                        </div>
-                      )}
-                      {activeTab === 'all_time' && typeof entry.gamesPlayed === 'number' && (
-                        <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
-                          {entry.gamesPlayed} {entry.gamesPlayed === 1 ? 'game' : 'games'} played • Best: {entry.bestScore?.toLocaleString() ?? entry.coins.toLocaleString()}
+                      {entry.maskedPhone && (
+                        <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '1px' }}>
+                          {entry.maskedPhone}
                         </div>
                       )}
                     </div>
@@ -342,5 +282,4 @@ export function LeaderboardPage({ onBack, onClose }: LeaderboardPageProps) {
   );
 }
 
-// Keep LeaderboardModal export as an alias for backward compatibility
 export const LeaderboardModal = LeaderboardPage;
